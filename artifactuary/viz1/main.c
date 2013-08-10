@@ -26,10 +26,6 @@ static GLuint g_verticesVBO;
 static GLuint g_colorsVBO;
 static GLuint g_texCoordsVBO;
 
-static GLUSshaderprogram g_trivialProgram;
-static GLint g_trivialVertexLocation;
-static GLuint g_trivialVerticesVBO;
-
 
 /**
  * Function for initialization.
@@ -100,41 +96,6 @@ GLUSboolean init(GLUSvoid)
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
-    
-    glusLoadTextFile("trivial.vert.glsl", &vertexSource);
-    glusLoadTextFile("trivial.frag.glsl", &fragmentSource);
-    glusBuildProgramFromSource(&g_trivialProgram, (const GLUSchar**)&vertexSource.text, (const GLUSchar**)&fragmentSource.text);
-    //printf("Vertex shader:\n%s\n--------\n", vertexSource.text);
-    //printf("Fragment shader:\n%s\n--------\n", fragmentSource.text);
-    glusDestroyTextFile(&vertexSource);
-    glusDestroyTextFile(&fragmentSource);
-    
-    g_trivialVertexLocation = glGetAttribLocation(g_trivialProgram.program, "a_vertex");
-    //printf("a_vertex: %d\n", g_trivialVertexLocation);
-    
-    GLfloat trivialVertices[] = {
-        0.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 1.0,
-    };
-    
-    glGenBuffers(1, &g_trivialVerticesVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, g_trivialVerticesVBO);
-    glBufferData(GL_ARRAY_BUFFER, 4 * 4 * sizeof (GLfloat), (GLfloat*)trivialVertices, GL_STATIC_DRAW);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
-    
-    printf("blarp: %d %d %d %d\n", g_verticesVBO, g_colorsVBO, g_texCoordsVBO, g_trivialVerticesVBO);
-/*    
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0f, 640.0f / 480.0f, 0.1f, 1000.0f);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glTranslate(0.0f, 0.0f, -8.0f);
-*/
     return GLUS_TRUE;
 }
 
@@ -186,15 +147,6 @@ GLUSboolean update(GLUSfloat time)
     glUseProgram(g_program.program);
     
     glusMatrix4x4Identityf(modelMatrix);
-    /*
-    for(int j = 0; j < 4; ++j) {
-        for(int i = 0; i < 4; ++i) {
-            printf("%g ", modelMatrix[j * 4 + i]);
-        }
-        printf("\n");
-    }
-    exit(0);
-    */
     glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
     
     glBindBuffer(GL_ARRAY_BUFFER, g_verticesVBO);
@@ -218,19 +170,6 @@ GLUSboolean update(GLUSfloat time)
     glDisableVertexAttribArray(g_texCoordLocation);
     
     
-    glUseProgram(g_trivialProgram.program);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, g_trivialVerticesVBO);
-    glVertexAttribPointer(g_trivialVertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(g_trivialVertexLocation);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    
-    glDisableVertexAttribArray(g_trivialVertexLocation);
-    
-    
     glUseProgram(0);
     
     
@@ -247,12 +186,10 @@ GLUSvoid terminate(GLUSvoid)
     glDeleteBuffers(1, &g_verticesVBO);
     glDeleteBuffers(1, &g_colorsVBO);
     glDeleteBuffers(1, &g_texCoordsVBO);
-    glDeleteBuffers(1, &g_trivialVerticesVBO);
     
     glUseProgram(0);
     
     glusDestroyProgram(&g_program);
-    glusDestroyProgram(&g_trivialProgram);
 }
 
 /**
