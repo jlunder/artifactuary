@@ -10,7 +10,7 @@ varying vec2 v_texCoord;
 
 void main(void)
 {
-	gl_Position = u_viewProjectionMatrix * u_modelMatrix * a_vertex;
+	gl_Position = a_vertex; //u_viewProjectionMatrix * u_modelMatrix * a_vertex;
 	v_color = a_color;
 	v_texCoord = a_texCoord;
 }
