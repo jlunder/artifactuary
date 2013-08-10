@@ -55,8 +55,10 @@ GLUSboolean init(GLUSvoid)
     //printf("attributes: %d %d %d\n", g_vertexLocation, g_colorLocation, g_texCoordLocation);
     
     //glEnable(GL_DEPTH_TEST);
+    
+    // premultiplied alpha
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glClearDepthf(1.0f);
@@ -70,9 +72,9 @@ GLUSboolean init(GLUSvoid)
     
     GLfloat lightColors[] = {
         1.0f, 1.0f, 1.0f, 0.0f,
-        1.0f, 0.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 0.0f,
     };
     
     GLfloat lightTexCoords[] = {
@@ -113,19 +115,17 @@ GLUSvoid reshape(GLUSint width, GLUSint height)
     // Set the viewport depending on the width and height of the window.
     glViewport(0, 0, width, height);
     
-    /*
     glusLookAtf(viewMatrix,
         0.0f, 0.0f, 8.0f,
         0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f);
     glusPerspectivef(viewProjectionMatrix, 45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
     glusMatrix4x4Multiplyf(viewProjectionMatrix, viewProjectionMatrix, viewMatrix);
-    */
     
-    glusMatrix4x4Identityf(viewProjectionMatrix);
+    //glusMatrix4x4Identityf(viewProjectionMatrix);
     for(int j = 0; j < 4; ++j) {
         for(int i = 0; i < 4; ++i) {
-            printf("%g ", viewProjectionMatrix[j * 4 + i]);
+            printf("%7.2f ", viewProjectionMatrix[j * 4 + i]);
         }
         printf("\n");
     }
@@ -148,6 +148,7 @@ GLUSboolean update(GLUSfloat time)
     
     glusMatrix4x4Identityf(modelMatrix);
     glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
+    glUniformMatrix4fv(g_viewProjectionMatrixLocation, 1, GL_FALSE, modelMatrix);
     
     glBindBuffer(GL_ARRAY_BUFFER, g_verticesVBO);
     glVertexAttribPointer(g_vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
