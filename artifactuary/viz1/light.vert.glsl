@@ -11,6 +11,7 @@ varying vec2 v_texCoord;
 void main(void)
 {
 	gl_Position = u_viewProjectionMatrix * u_modelMatrix * a_vertex;
+	//gl_Position = vec4(a_texCoord.x, a_texCoord.y, 0.0, 0.0);
 	v_color = a_color;
 	v_texCoord = a_texCoord;
 }

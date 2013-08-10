@@ -26,6 +26,7 @@ static GLuint g_verticesVBO;
 static GLuint g_colorsVBO;
 static GLuint g_texCoordsVBO;
 
+static GLfloat g_aspectRatio;
 
 /**
  * Function for initialization.
@@ -109,27 +110,10 @@ GLUSboolean init(GLUSvoid)
  */
 GLUSvoid reshape(GLUSint width, GLUSint height)
 {
-    GLfloat viewMatrix[16];
-    GLfloat viewProjectionMatrix[16];
-    
     // Set the viewport depending on the width and height of the window.
     glViewport(0, 0, width, height);
     
-    glusLookAtf(viewMatrix,
-        0.0f, 0.0f, 8.0f,
-        0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f);
-    glusPerspectivef(viewProjectionMatrix, 45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
-    glusMatrix4x4Multiplyf(viewProjectionMatrix, viewProjectionMatrix, viewMatrix);
-    
-    //glusMatrix4x4Identityf(viewProjectionMatrix);
-    for(int j = 0; j < 4; ++j) {
-        for(int i = 0; i < 4; ++i) {
-            printf("%7.2f ", viewProjectionMatrix[j * 4 + i]);
-        }
-        printf("\n");
-    }
-    glUniformMatrix4fv(g_viewProjectionMatrixLocation, 1, GL_FALSE, viewProjectionMatrix);
+    g_aspectRatio = (GLfloat)width / (GLfloat)height;
 }
 
 /**
@@ -139,16 +123,25 @@ GLUSvoid reshape(GLUSint width, GLUSint height)
  */
 GLUSboolean update(GLUSfloat time)
 {
+    GLfloat viewMatrix[16];
+    GLfloat viewProjectionMatrix[16];
     GLfloat modelMatrix[16];
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
+    glusLookAtf(viewMatrix,
+        0.0f, 0.0f, 8.0f,
+        0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f);
+    glusPerspectivef(viewProjectionMatrix, 45.0f, g_aspectRatio, 0.1f, 1000.0f);
+    glusMatrix4x4Multiplyf(viewProjectionMatrix, viewProjectionMatrix, viewMatrix);
     
     glUseProgram(g_program.program);
     
+    glUniformMatrix4fv(g_viewProjectionMatrixLocation, 1, GL_FALSE, viewProjectionMatrix);
+    
     glusMatrix4x4Identityf(modelMatrix);
     glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
-    glUniformMatrix4fv(g_viewProjectionMatrixLocation, 1, GL_FALSE, modelMatrix);
     
     glBindBuffer(GL_ARRAY_BUFFER, g_verticesVBO);
     glVertexAttribPointer(g_vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
@@ -170,9 +163,7 @@ GLUSboolean update(GLUSfloat time)
     glDisableVertexAttribArray(g_colorLocation);
     glDisableVertexAttribArray(g_texCoordLocation);
     
-    
     glUseProgram(0);
-    
     
     return GLUS_TRUE;
 }
