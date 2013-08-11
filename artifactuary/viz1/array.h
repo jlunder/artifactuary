@@ -1,0 +1,10 @@
+#ifndef ARRAY_H_INCLUDED
+#define ARRAY_H_INCLUDED
+
+
+#define ARRAY_STRIDE 128
+#define ARRAY_WIDTH 110
+#define ARRAY_HEIGHT 18
+
+
+#endif

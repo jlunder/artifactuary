@@ -17,22 +17,32 @@ static GLuint g_verticesVBO;
 static GLfloat g_aspectRatio;
 
 
-#define ARRAY_WIDTH 110
-#define ARRAY_HEIGHT 18
+#include "array.h"
+#include "fire.h"
 
 
-uint8_t array_colors[ARRAY_HEIGHT][ARRAY_WIDTH][3];
+uint8_t array_data[ARRAY_HEIGHT][ARRAY_STRIDE][4];
+
+fire_state_t fire_state;
 
 
-void process(void)
+void init_array(void)
 {
+    init_fire(&fire_state);
+}
+
+void process_array(float time)
+{
+    /*
     for(int j = 0; j < ARRAY_HEIGHT; ++j) {
         for(int i = 0; i < ARRAY_WIDTH; ++i) {
-            array_colors[j][i][0] = i * 256 / ARRAY_WIDTH;
-            array_colors[j][i][1] = j * 256 / ARRAY_HEIGHT;
-            array_colors[j][i][2] = rand() % 256;
+            array_colors[j][i][0] = 255;
+            array_colors[j][i][1] = 255;
+            array_colors[j][i][2] = 127;
         }
     }
+    */
+    process_fire(time, array_data, &fire_state);
 }
 
 
@@ -75,6 +85,8 @@ GLUSboolean init(GLUSvoid)
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
+    init_array();
+    
     return GLUS_TRUE;
 }
 
@@ -100,13 +112,13 @@ GLUSboolean update(GLUSfloat time)
     
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
-    process();
+    process_array(time);
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
     process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * 1000000000 -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * 1000000000);
     
-    printf("frame time: %7.3fms\n", (double)process_nsec * 1.0e-6);
+    printf("frame time: %7.3fms; %g\n", (double)process_nsec * 1.0e-6, time);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -138,9 +150,9 @@ GLUSboolean update(GLUSfloat time)
             glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
             
             glUniform4f(g_colorLocation,
-                array_colors[j][i][0] * (1.0f / 255.0f),
-                array_colors[j][i][1] * (1.0f / 255.0f),
-                array_colors[j][i][2] * (1.0f / 255.0f),
+                array_data[j][i][0] * (1.0f / 255.0f),
+                array_data[j][i][1] * (1.0f / 255.0f),
+                array_data[j][i][2] * (1.0f / 255.0f),
                 0.0f);
             
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -186,7 +198,7 @@ int main(int argc, char* argv[])
 
     glusTerminateFunc(terminate);
 
-    if (!glusCreateWindow("GLUS Example Window", 640, 480, eglAttributes, GLUS_FALSE))
+    if (!glusCreateWindow("GLUS Example Window", 1280, 720, eglAttributes, GLUS_FALSE))
     {
         printf("Could not create window!\n");
         return -1;
