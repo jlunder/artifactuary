@@ -59,7 +59,7 @@ GLUSboolean init(GLUSvoid)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     
-    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     //glClearDepthf(1.0f);
     
     GLfloat lightVertices[] = {
@@ -94,15 +94,25 @@ GLUSboolean update(GLUSfloat time)
     GLfloat viewProjectionMatrix[16];
     GLfloat modelMatrix[16];
     
+    struct timespec process_start_time;
+    struct timespec process_end_time;
+    int64_t process_nsec;
     
+    
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
     process();
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
+    process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * 1000000000 -
+        (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * 1000000000);
+    
+    printf("frame time: %7.3fms\n", (double)process_nsec * 1.0e-6);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     
     glusLookAtf(viewMatrix,
-        0.0f, 0.0f, 8.0f,
+        0.0f, 0.0f, 10.0f,
         0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f);
     glusPerspectivef(viewProjectionMatrix, 45.0f, g_aspectRatio, 0.1f, 1000.0f);
@@ -120,14 +130,22 @@ GLUSboolean update(GLUSfloat time)
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
-    //
-    glusMatrix4x4Identityf(modelMatrix);
-    glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
-    
-    glUniform4f(g_colorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
-    
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    //
+    for(int j = 0; j < ARRAY_HEIGHT; ++j) {
+        for(int i = 0; i < ARRAY_WIDTH; ++i) {
+            glusMatrix4x4Identityf(modelMatrix);
+            glusMatrix4x4Translatef(modelMatrix, 0.1f * (i - 0.5f * ARRAY_WIDTH), 0.1f * (-j + 0.5f * ARRAY_HEIGHT), 0.0f);
+            glusMatrix4x4Scalef(modelMatrix, 0.05f, 0.05f, 1.0f);
+            glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
+            
+            glUniform4f(g_colorLocation,
+                array_colors[j][i][0] * (1.0f / 255.0f),
+                array_colors[j][i][1] * (1.0f / 255.0f),
+                array_colors[j][i][2] * (1.0f / 255.0f),
+                0.0f);
+            
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+    }
     
     glDisableVertexAttribArray(g_vertexLocation);
     
