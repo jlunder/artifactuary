@@ -19,17 +19,21 @@ static GLfloat g_aspectRatio;
 
 #include "array.h"
 #include "fire.h"
+#include "scroll.h"
 
 
-uint8_t array_data[ARRAY_HEIGHT][ARRAY_STRIDE][4];
+rgba_t array_data[ARRAY_HEIGHT][ARRAY_STRIDE];
 
 fire_state_t fire_state;
+scroll_state_t scroll_state;
 
 
 void init_array(void)
 {
     init_fire(&fire_state);
+    init_scroll(&scroll_state);
 }
+
 
 void process_array(float time)
 {
@@ -42,7 +46,8 @@ void process_array(float time)
         }
     }
     */
-    process_fire(time, array_data, &fire_state);
+    process_fire(&fire_state, time, array_data);
+    process_scroll(&scroll_state, time, array_data);
 }
 
 
@@ -118,7 +123,7 @@ GLUSboolean update(GLUSfloat time)
     process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * 1000000000 -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * 1000000000);
     
-    printf("frame time: %7.3fms; %g\n", (double)process_nsec * 1.0e-6, time);
+    printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -150,9 +155,9 @@ GLUSboolean update(GLUSfloat time)
             glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
             
             glUniform4f(g_colorLocation,
-                array_data[j][i][0] * (1.0f / 255.0f),
-                array_data[j][i][1] * (1.0f / 255.0f),
-                array_data[j][i][2] * (1.0f / 255.0f),
+                array_data[j][i].c.r * (1.0f / 255.0f),
+                array_data[j][i].c.g * (1.0f / 255.0f),
+                array_data[j][i].c.b * (1.0f / 255.0f),
                 0.0f);
             
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
