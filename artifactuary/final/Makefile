@@ -63,10 +63,10 @@ ARTIFACTUARY_SRC=$(GLUS_SRC) \
 %.o: %.c *.h
 	gcc -g -W -Wall --std=gnu99 -fgnu89-inline -c -o $@ -DGLUS_ES2 -I ./GLUS -I /opt/vc/include -I /opt/vc/include/interface/vcos/pthreads -I /opt/vc/include/interface/vmcs_host/linux $<
 
-viz1: $(patsubst %.c,%.o,$(ARTIFACTUARY_SRC) $(GLUS_SRC))
-	gcc -g -o viz1 -lSDL -lEGL -lGLESv2 -lbcm_host -lvcos -lvchiq_arm -lpthread -lrt -lm -L /opt/vc/lib $^
+artifactuary: $(patsubst %.c,%.o,$(ARTIFACTUARY_SRC) $(GLUS_SRC))
+	gcc -g -o artifactuary -lSDL -lEGL -lGLESv2 -lbcm_host -lvcos -lvchiq_arm -lpthread -lrt -lm -L /opt/vc/lib $^
 
-all: viz1
+all: artifactuary
 
 clean:
 	for X in viz1 *.o GLUS/*.o; do \
