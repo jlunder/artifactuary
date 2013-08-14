@@ -82,19 +82,15 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     GLfloat viewProjectionMatrix[16];
     GLfloat modelMatrix[16];
     
-    struct timespec process_start_time;
-    struct timespec process_end_time;
-    int64_t process_nsec;
+    GLfloat light_spacing = 0.1f;
+    GLfloat array_spacing = 0.5f;
+    GLfloat arrays_total_width;
+    GLfloat arrays_total_height;
+    GLfloat arrays_cur_x = 0.0f;
     
     
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
     artifactuary_process(time);
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
-    process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * 1000000000 -
-        (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * 1000000000);
-    
-    printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -118,20 +114,55 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     
-    for(int j = 0; j < ARRAY_HEIGHT; ++j) {
-        for(int i = 0; i < ARRAY_WIDTH; ++i) {
-            glusMatrix4x4Identityf(modelMatrix);
-            glusMatrix4x4Translatef(modelMatrix, 0.1f * (i - 0.5f * ARRAY_WIDTH), 0.1f * (-j + 0.5f * ARRAY_HEIGHT), 0.0f);
-            glusMatrix4x4Scalef(modelMatrix, 0.05f, 0.05f, 1.0f);
-            glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
+    
+    // compute size of the non-cityscape panels -- this will be the top row
+    arrays_total_width = -array_spacing;
+    arrays_total_height = 0.0f;
+    
+    assert(ARTIFACTUARY_CITYSCAPE == ARTIFACTUARY_NUM_ARRAYS - 1);
+    for(int32_t j = 0; j < ARTIFACTUARY_NUM_ARRAYS - 1; ++j) {
+        GLfloat array_width = artifactuary_arrays[i].width * pixel_spacing
+        GLfloat array_height = artifactuary_arrays[i].height * pixel_spacing;
+        
+        arrays_total_width += array_width;
+        if(array_height > arrays_total_height) {
+            arrays_total_height = array_height;
+        }
+    }
+    
+    // add the height of the cityscape panel
+    arrays_total_height += array_spacing + ARTIFACTUARY_CITYSCAPE_HEIGHT * pixel_spacing;
+    
+    for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
+        GLfloat base_x = arrays_total_width * -0.5f;
+        GLfloat base_y = arrays_total_height * -0.5f;
+        
+        if(k == ARTIFACTUARY_CITYSCAPE) {
+            base_x += arrays_cur_x;
+            base_y += ARTIFACTUARY_CITYSCAPE_HEIGHT + pixel_spacing + array_spacing;
+        }
+        else {
+            base_x = ARTIFACTUARY_CITYSCAPE_WIDTH * -0.5f;
+        }
+        
+        for(int j = 0; j < ARRAY_HEIGHT; ++j) {
+            for(int i = 0; i < ARRAY_WIDTH; ++i) {
+                glusMatrix4x4Identityf(modelMatrix);
+                glusMatrix4x4Translatef(modelMatrix, base_x + i * pixel_spacing, base_y + (artifactuary_arrays[k]->height - 1 - j) * pixel_spacing, 0.0f);
+                glusMatrix4x4Scalef(modelMatrix, pixel_spacing * 0.5f, pixel_spacing * 0.5f, 1.0f);
+                glUniformMatrix4fv(g_modelMatrixLocation, 1, GL_FALSE, modelMatrix);
             
-            glUniform4f(g_colorLocation,
-                array_data[j][i].c.r * (1.0f / 255.0f),
-                array_data[j][i].c.g * (1.0f / 255.0f),
-                array_data[j][i].c.b * (1.0f / 255.0f),
-                0.0f);
+                glUniform4f(g_colorLocation,
+                    array_data[j][i].c.r * (1.0f / 255.0f),
+                    array_data[j][i].c.g * (1.0f / 255.0f),
+                    array_data[j][i].c.b * (1.0f / 255.0f),
+                    0.0f);
             
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            }
+        }
+        if(k != ARTIFACTUARY_CITYSCAPE) {
+            arrays_cur_x += ;
         }
     }
     

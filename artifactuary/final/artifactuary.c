@@ -1,37 +1,92 @@
 #include "artifactuary.h"
 
+#include <stdio.h>
 
 #include "fire.h"
 #include "scroll.h"
 
 
-rgba_t array_data[ARRAY_HEIGHT][ARRAY_STRIDE];
+// the data pointers are set up in artifactuary_init
+array_t artifactuary_arrays[ARTIFACTUARY_NUM_ARRAYS] = {
+	{
+		.width = ARTIFACTUARY_BUILDING_0_FACE_0_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_0_FACE_0_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_0_FACE_1_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_0_FACE_1_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_1_FACE_0_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_1_FACE_0_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_1_FACE_1_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_1_FACE_1_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_2_FACE_0_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_2_FACE_0_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_2_FACE_1_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_2_FACE_1_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_3_FACE_0_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_3_FACE_0_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_BUILDING_3_FACE_1_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_3_FACE_1_HEIGHT,
+	},
+	{
+		.width = ARTIFACTUARY_CITYSCAPE_WIDTH,
+		.height = ARTIFACTUARY_CITYSCAPE_HEIGHT,
+	},
+};
+
+rgba_t artifactuary_array_data[ARTIFACTUARY_NUM_PIXELS];
+int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 
-fire_state_t fire_state;
-scroll_state_t scroll_state;
+fire_state_t artifactuary_fire_state;
+scroll_state_t artifactuary_scroll_state;
 
 
 void artifactuary_init(void)
 {
-    fire_init(&fire_state);
-    scroll_init(&scroll_state);
+	rgba_t* data = artifactuary_array_data;
+	
+    array_init();
+    
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+    	artifactuary_arrays[i].data = data;
+    	data += artifactuary_arrays[i].width * artifactuary_arrays[i].height;
+    }
+    
+    fire_init(&artifactuary_fire_state);
+    scroll_init(&artifactuary_scroll_state);
 }
 
 
 void artifactuary_process(float time)
 {
-    /*
-    for(int j = 0; j < ARRAY_HEIGHT; ++j) {
-        for(int i = 0; i < ARRAY_WIDTH; ++i) {
-            array_colors[j][i][0] = 255;
-            array_colors[j][i][1] = 255;
-            array_colors[j][i][2] = 127;
-        }
-    }
-    */
-    fire_process(&fire_state, time, array_data);
-    scroll_process(&scroll_state, time, array_data);
+	struct timespec process_start_time;
+	struct timespec process_end_time;
+	int64_t process_nsec;
+	
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
+	
+    fire_process(&artifactuary_fire_state, time, array_data);
+    scroll_process(&artifactuary_scroll_state, time, array_data);
+    
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
+	
+	process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
+		(process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
+	
+	printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, last_frame_sec);
 }
 
 

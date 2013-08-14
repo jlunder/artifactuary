@@ -1,26 +1,55 @@
 #include "spi_harness.h"
 
-#include <stdio.h>
 #include <time.h>
+
+#include <linux/spi/spidev.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 
 #define BILLION 1000000000
 #define FRAME_NSEC 33333333
 
 
+int spi_harness_fd;
+
+
+void spi_harness_loop(void);
+
+
 void spi_harness_main(void)
 {
+    uint32_t speed = 2000000;
+    uint8_t bits = 8;
+    uint8_t mode = 0;
+    
     artifactuary_init();
     
+    spi_harness_fd = open("/dev/spidev0.0", O_RDWR);
+    
+    if(spi_harness_fd <= 0) {
+        printf("failed to pen /dev/spidev0.0\n");
+        return;
+    }
+    
+    ioctl(spi_harness_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+    ioctl(spi_harness_fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+    ioctl(spi_harness_fd, SPI_IOC_WR_MODE, &mode);
+    
+    spi_harness_loop();
+}
+
+
+void spi_harness_loop(void)
+{
     struct timespec wall_start_time;
     struct timespec wall_cur_time;
     int64_t cur_nsec;
     int64_t last_target_nsec;
     int64_t next_target_nsec;
     
-    struct timespec process_start_time;
-    struct timespec process_end_time;
-    int64_t process_nsec;
+    uint8_t spi_frame_data[ARTIFACTUARY_NUM_PIXELS * 3];
     
     clock_gettime(CLOCK_MONOTONIC, &wall_start_time);
     cur_nsec = wall_start_time.tv_nsec + (int64_t)wall_start_time.tv_sec * BILLION;
@@ -29,14 +58,7 @@ void spi_harness_main(void)
     while(true) {
         double last_frame_sec = (double)(next_target_nsec - last_target_nsec) * 1.0e-9;
         
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
         artifactuary_process(last_frame_sec);
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
-        
-        process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
-            (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
-        
-        printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, last_frame_sec);
         
         clock_gettime(CLOCK_MONOTONIC, &wall_cur_time);
         cur_nsec = wall_cur_time.tv_nsec + (int64_t)wall_cur_time.tv_sec * BILLION;
@@ -58,7 +80,15 @@ void spi_harness_main(void)
         }
         
         // output the frame over the SPI bus
+        for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS * 3; i += 3) {
+            int32_t index = artifactuary_array_data_mapping[i];
+            spi_frame_data[i + 0] = artifactuary_array_data[index].c.r;
+            spi_frame_data[i + 1] = artifactuary_array_data[index].c.g;
+            spi_frame_data[i + 2] = artifactuary_array_data[index].c.b;
+        }
+        write(spi_fd, spi_frame_data, ARTIFACTUARY_NUM_PIXELS * 3);
     }
 }
+
 
 
