@@ -1,6 +1,7 @@
 #include "artifactuary.h"
 
 #include <stdio.h>
+#include <time.h>
 
 #include "fire.h"
 #include "scroll.h"
@@ -56,37 +57,45 @@ scroll_state_t artifactuary_scroll_state;
 
 void artifactuary_init(void)
 {
-	rgba_t* data = artifactuary_array_data;
+    rgba_t* data = artifactuary_array_data;
 	
     array_init();
     
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-    	artifactuary_arrays[i].data = data;
-    	data += artifactuary_arrays[i].width * artifactuary_arrays[i].height;
+        artifactuary_arrays[i].data = data;
+        data += artifactuary_arrays[i].width * artifactuary_arrays[i].height;
     }
     
-    fire_init(&artifactuary_fire_state);
-    scroll_init(&artifactuary_scroll_state);
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS; ++i) {
+        artifactuary_array_data_mapping[i] = i;
+        artifactuary_array_data[i].rgba = 0xFFFFFFFF;
+    }
+    
+    fire_init(&artifactuary_fire_state, ARTIFACTUARY_CITYSCAPE_WIDTH, ARTIFACTUARY_CITYSCAPE_HEIGHT);
+    scroll_init(&artifactuary_scroll_state, ARTIFACTUARY_BUILDING_3_FACE_0_WIDTH, ARTIFACTUARY_BUILDING_3_FACE_0_HEIGHT);
 }
+
+
+#define BILLION 1000000000
 
 
 void artifactuary_process(float time)
 {
-	struct timespec process_start_time;
-	struct timespec process_end_time;
-	int64_t process_nsec;
-	
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
-	
-    fire_process(&artifactuary_fire_state, time, array_data);
-    scroll_process(&artifactuary_scroll_state, time, array_data);
+    struct timespec process_start_time;
+    struct timespec process_end_time;
+    int64_t process_nsec;
     
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
-	
-	process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
-		(process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
-	
-	printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, last_frame_sec);
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
+    
+    fire_process(&artifactuary_fire_state, time, &artifactuary_arrays[ARTIFACTUARY_CITYSCAPE]);
+    scroll_process(&artifactuary_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_3_FACE_0]);
+    
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
+    
+    process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
+        (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
+    
+    printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time);
 }
 
 

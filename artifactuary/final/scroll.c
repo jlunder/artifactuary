@@ -15,12 +15,12 @@ scroll_glyph_t scroll_font[SCROLL_CHARSET_END - SCROLL_CHARSET_START];
 
 
 scroll_glyph_t const* scroll_get_glyph(char c);
-void scroll_draw(scroll_state_t* state, rgba_t target_array[ARRAY_HEIGHT][ARRAY_STRIDE], char const* text, int32_t text_offset, rgba_t text_color);
+void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color);
 
 
-void scroll_init(scroll_state_t* state)
+void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
 {
-    state->array_width = ARRAY_WIDTH << 8;
+    state->array_width = width;
     state->current_message = NULL;
     state->current_message_width = 0;
     state->next_message = NULL;
@@ -29,14 +29,16 @@ void scroll_init(scroll_state_t* state)
     state->scroll_distance = 0;
     state->scroll_speed = 0;
     
-    state->vertical_pos = (ARRAY_HEIGHT - SCROLL_CHAR_HEIGHT) / 2;
+    assert(height >= SCROLL_CHAR_HEIGHT);
+    
+    state->vertical_pos = (height - SCROLL_CHAR_HEIGHT) / 2;
     
     state->current_message = strdup("Hello Playa!");
     state->current_message_width = strlen(state->current_message) * SCROLL_CHAR_WIDTH;
 }
 
 
-void scroll_process(scroll_state_t* state, float time, rgba_t target_array[ARRAY_HEIGHT][ARRAY_STRIDE])
+void scroll_process(scroll_state_t* state, float time, array_t* target_array)
 {
     bool stable;
     
@@ -96,7 +98,7 @@ scroll_glyph_t const* scroll_get_glyph(char c)
 }
 
 
-void scroll_draw(scroll_state_t* state, rgba_t target_array[ARRAY_HEIGHT][ARRAY_STRIDE], char const* text, int32_t text_offset, rgba_t text_color)
+void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color)
 {
     int32_t pixel_pos = (state->array_width - text_offset) >> 8;
     
@@ -115,7 +117,7 @@ void scroll_draw(scroll_state_t* state, rgba_t target_array[ARRAY_HEIGHT][ARRAY_
                 scanline = scanline >> -pixel_pos;
                 for(int i = -pixel_pos; (scanline != 0) && (i < SCROLL_CHAR_WIDTH); ++i) {
                     if(scanline & 1) {
-                        target_array[state->vertical_pos + j][pixel_pos + i] = text_color;
+                        target_array->data[(state->vertical_pos + j) * target_array->width + pixel_pos + i] = text_color;
                     }
                     scanline = scanline >> 1;
                 }
@@ -126,7 +128,7 @@ void scroll_draw(scroll_state_t* state, rgba_t target_array[ARRAY_HEIGHT][ARRAY_
         ++text;
     }
     
-    while(pixel_pos + SCROLL_CHAR_WIDTH < ARRAY_WIDTH) {
+    while(pixel_pos + SCROLL_CHAR_WIDTH < target_array->width) {
         scroll_glyph_t const* glyph;
         
         if(*text == 0) {
@@ -139,7 +141,7 @@ void scroll_draw(scroll_state_t* state, rgba_t target_array[ARRAY_HEIGHT][ARRAY_
             uint32_t scanline = glyph->scanlines[j];
             for(int i = 0; (scanline != 0) && (i < SCROLL_CHAR_WIDTH); ++i) {
                 if(scanline & 1) {
-                    target_array[state->vertical_pos + j][pixel_pos + i] = text_color;
+                     target_array->data[(state->vertical_pos + j) * target_array->width + pixel_pos + i] = text_color;
                 }
                 scanline = scanline >> 1;
             }
@@ -152,14 +154,14 @@ void scroll_draw(scroll_state_t* state, rgba_t target_array[ARRAY_HEIGHT][ARRAY_
     if(*text == 0) {
         return;
     }
-    if((pixel_pos < ARRAY_WIDTH) && (*text != 0)) {
+    if((pixel_pos < target_array->width) && (*text != 0)) {
         scroll_glyph_t const* glyph = scroll_get_glyph(*text);
         // a clipped char on the right!
         for(int j = 0; j < SCROLL_CHAR_HEIGHT; ++j) {
             uint32_t scanline = glyph->scanlines[j];
-            for(int i = 0; (scanline != 0) && (i < (ARRAY_WIDTH - pixel_pos)); ++i) {
+            for(int i = 0; (scanline != 0) && (i < (target_array->width - pixel_pos)); ++i) {
                 if(scanline & 1) {
-                    target_array[state->vertical_pos + j][pixel_pos + i] = text_color;
+                    target_array->data[(state->vertical_pos + j) * target_array->width + pixel_pos + i] = text_color;
                 }
                 scanline = scanline >> 1;
             }

@@ -1,9 +1,11 @@
 #include "spi_harness.h"
 
+#include <stdio.h>
 #include <time.h>
 
 #include <linux/spi/spidev.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -16,6 +18,7 @@ int spi_harness_fd;
 
 
 void spi_harness_loop(void);
+void spi_harness_output_spi_data(void);
 
 
 void spi_harness_main(void)
@@ -29,7 +32,7 @@ void spi_harness_main(void)
     spi_harness_fd = open("/dev/spidev0.0", O_RDWR);
     
     if(spi_harness_fd <= 0) {
-        printf("failed to pen /dev/spidev0.0\n");
+        perror("failed to open /dev/spidev0.0\n");
         return;
     }
     
@@ -49,11 +52,10 @@ void spi_harness_loop(void)
     int64_t last_target_nsec;
     int64_t next_target_nsec;
     
-    uint8_t spi_frame_data[ARTIFACTUARY_NUM_PIXELS * 3];
-    
     clock_gettime(CLOCK_MONOTONIC, &wall_start_time);
     cur_nsec = wall_start_time.tv_nsec + (int64_t)wall_start_time.tv_sec * BILLION;
     next_target_nsec = cur_nsec + FRAME_NSEC;
+    last_target_nsec = cur_nsec;
     
     while(true) {
         double last_frame_sec = (double)(next_target_nsec - last_target_nsec) * 1.0e-9;
@@ -79,16 +81,43 @@ void spi_harness_loop(void)
             next_target_nsec = cur_nsec + FRAME_NSEC;
         }
         
-        // output the frame over the SPI bus
-        for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS * 3; i += 3) {
-            int32_t index = artifactuary_array_data_mapping[i];
-            spi_frame_data[i + 0] = artifactuary_array_data[index].c.r;
-            spi_frame_data[i + 1] = artifactuary_array_data[index].c.g;
-            spi_frame_data[i + 2] = artifactuary_array_data[index].c.b;
-        }
-        write(spi_fd, spi_frame_data, ARTIFACTUARY_NUM_PIXELS * 3);
+        spi_harness_output_spi_data();
     }
 }
 
+
+void spi_harness_output_spi_data(void)
+{
+    uint8_t spi_frame_data[ARTIFACTUARY_NUM_PIXELS * 3];
+    struct spi_ioc_transfer xfer[4];
+    int ret;
+    
+    // output the frame over the SPI bus
+    
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS * 3; i += 3) {
+        int32_t index = artifactuary_array_data_mapping[i];
+        spi_frame_data[i + 0] = artifactuary_array_data[index].c.b;
+        spi_frame_data[i + 1] = artifactuary_array_data[index].c.r;
+        spi_frame_data[i + 2] = artifactuary_array_data[index].c.g;
+    }
+    
+    memset(&xfer, 0, sizeof xfer);
+    
+    xfer[0].tx_buf = (intptr_t)spi_frame_data;
+    xfer[0].len = sizeof spi_frame_data / 2;
+    xfer[0].delay_usecs = 0;
+    xfer[1].tx_buf = (intptr_t)(spi_frame_data + (ARTIFACTUARY_NUM_PIXELS * 3) / 2);
+    xfer[1].len = sizeof spi_frame_data - sizeof spi_frame_data / 2;
+    xfer[1].delay_usecs = 1000;
+    
+    ret = ioctl(spi_harness_fd, SPI_IOC_MESSAGE(1), &xfer[0]);
+    if(ret < 1) {
+        perror("SPI send (a) failed");
+    }
+    ret = ioctl(spi_harness_fd, SPI_IOC_MESSAGE(1), &xfer[1]);
+    if(ret < 1) {
+        perror("SPI send (b) failed");
+    }
+}
 
 

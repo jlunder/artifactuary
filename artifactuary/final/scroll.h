@@ -23,8 +23,8 @@ typedef struct scroll_state
 } scroll_state_t;
 
 
-void scroll_init(scroll_state_t* state);
-void scroll_process(scroll_state_t* state, float time, rgba_t target_array[ARRAY_HEIGHT][ARRAY_STRIDE]);
+void scroll_init(scroll_state_t* state, int32_t width, int32_t height);
+void scroll_process(scroll_state_t* state, float time, array_t* target_array);
 
 
 #endif

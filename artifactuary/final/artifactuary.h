@@ -52,6 +52,9 @@
      ARTIFACTUARY_CITYSCAPE_WIDTH * ARTIFACTUARY_CITYSCAPE_HEIGHT)
 
 
+#include "array.h"
+
+
 extern array_t artifactuary_arrays[ARTIFACTUARY_NUM_ARRAYS];
 extern rgba_t artifactuary_array_data[ARTIFACTUARY_NUM_PIXELS];
 extern int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
@@ -59,9 +62,6 @@ extern int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 void artifactuary_init(void);
 void artifactuary_process(float time);
-
-
-#include <array.h>
 
 
 #endif

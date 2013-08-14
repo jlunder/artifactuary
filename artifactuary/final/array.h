@@ -23,13 +23,15 @@ typedef struct {
 } array_t;
 
 
+void array_init(void);
+
 void array_alloc(array_t* array, int32_t width, int32_t height);
 void array_free(array_t* array);
 
-inline void array_set_pixel(array_t* array, int32_t x, int32_t y, rgba_t color)
-{
-	array->data[y * array->width + x] = color;
-}
+//inline void array_set_pixel(array_t* array, int32_t x, int32_t y, rgba_t color)
+//{
+//	array->data[y * array->width + x] = color;
+//}
 
 void array_composite_source_alpha(array_t* target, array_t* source);
 void array_composite_source_alpha_threshold(array_t* target, array_t* source, uint8_t threshold);

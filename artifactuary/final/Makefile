@@ -51,6 +51,7 @@ GLUS_SRC=$(GLUS_COMMON_SRC) $(GLUS_GLES2_SRC) GLUS/glus_raspberrypi_es.c
 
 ARTIFACTUARY_SRC=$(GLUS_SRC) \
 	artifactuary.c \
+	array.c \
 	main.c \
 	gles2_harness.c \
 	spi_harness.c \

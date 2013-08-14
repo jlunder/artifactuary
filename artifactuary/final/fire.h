@@ -7,12 +7,18 @@
 
 typedef struct fire_state
 {
-    uint8_t intensity[ARRAY_HEIGHT + 1][ARRAY_STRIDE];
+    int32_t width;
+    int32_t height;
+    int32_t total_pixels;
+    int32_t kernel_offsets[2];
+    int32_t left_kernel_offsets[2];
+    int32_t right_kernel_offsets[2];
+    uint8_t* intensity;
 } fire_state_t;
 
 
-void fire_init(fire_state_t* state);
-void fire_process(fire_state_t* state, float time, rgba_t target_array[ARRAY_HEIGHT][ARRAY_STRIDE]);
+void fire_init(fire_state_t* state, int32_t width, int32_t height);
+void fire_process(fire_state_t* state, float time, array_t* target_array);
 
 
 #endif

@@ -1,3 +1,5 @@
+// bodge for mutual dependency in includes
+#include "artifactuary.h"
 #include "array.h"
 
 
@@ -50,11 +52,11 @@ void array_composite_source_alpha(array_t* target, array_t* source)
     
     for(int32_t i = 0; i < size; ++i) {
         uint8_t* one_minus_alpha_table = array_one_minus_alpha_table[source->data[i].c.a];
-        uint8_t* alpha_table = array_alpha_table[source->data[i].c.a]
+        uint8_t* alpha_table = array_alpha_table[source->data[i].c.a];
         
-        target->data[i].c.r = one_minus_alpha_table[target->data[i].c.r] + alpha_table[source_data[i].c.r];
-        target->data[i].c.g = one_minus_alpha_table[target->data[i].c.g] + alpha_table[source_data[i].c.g];
-        target->data[i].c.b = one_minus_alpha_table[target->data[i].c.b] + alpha_table[source_data[i].c.b];
+        target->data[i].c.r = one_minus_alpha_table[target->data[i].c.r] + alpha_table[source->data[i].c.r];
+        target->data[i].c.g = one_minus_alpha_table[target->data[i].c.g] + alpha_table[source->data[i].c.g];
+        target->data[i].c.b = one_minus_alpha_table[target->data[i].c.b] + alpha_table[source->data[i].c.b];
         target->data[i].c.a = 255;
     }
 }
@@ -78,7 +80,7 @@ void array_composite_source_alpha_threshold(array_t* target, array_t* source, ui
 void array_composite_explicit_alpha(array_t* target, array_t* source, uint8_t alpha)
 {
     uint8_t* one_minus_alpha_table = array_one_minus_alpha_table[alpha];
-    uint8_t* alpha_table = array_alpha_table[alpha]
+    uint8_t* alpha_table = array_alpha_table[alpha];
     
     int32_t size = target->width * target->height;
     
@@ -86,9 +88,9 @@ void array_composite_explicit_alpha(array_t* target, array_t* source, uint8_t al
     assert(target->height == source->height);
     
     for(int32_t i = 0; i < size; ++i) {
-        target->data[i].c.r = one_minus_alpha_table[target->data[i].c.r] + alpha_table[source_data[i].c.r];
-        target->data[i].c.g = one_minus_alpha_table[target->data[i].c.g] + alpha_table[source_data[i].c.g];
-        target->data[i].c.b = one_minus_alpha_table[target->data[i].c.b] + alpha_table[source_data[i].c.b];
+        target->data[i].c.r = one_minus_alpha_table[target->data[i].c.r] + alpha_table[source->data[i].c.r];
+        target->data[i].c.g = one_minus_alpha_table[target->data[i].c.g] + alpha_table[source->data[i].c.g];
+        target->data[i].c.b = one_minus_alpha_table[target->data[i].c.b] + alpha_table[source->data[i].c.b];
         target->data[i].c.a = 255;
     }
 }
@@ -105,11 +107,11 @@ void array_composite_add(array_t* target, array_t* source)
         int32_t sum;
         
         sum = (int32_t)target->data[i].c.r + source->data[i].c.r;
-        target.c.r = sum > 255 ? 255 : (uint8_t)sum;
+        target->data[i].c.r = sum > 255 ? 255 : (uint8_t)sum;
         sum = (int32_t)target->data[i].c.g + source->data[i].c.g;
-        target.c.g = sum > 255 ? 255 : (uint8_t)sum;
+        target->data[i].c.g = sum > 255 ? 255 : (uint8_t)sum;
         sum = (int32_t)target->data[i].c.b + source->data[i].c.b;
-        target.c.b = sum > 255 ? 255 : (uint8_t)sum;
+        target->data[i].c.b = sum > 255 ? 255 : (uint8_t)sum;
     }
 }
 
