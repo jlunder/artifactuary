@@ -77,7 +77,8 @@ void fire_process(fire_state_t* state, float time, array_t* target_array)
     assert(width == target_array->width);
     assert(height == target_array->height);
     
-    // copy the 
+    // copy the intensities into the framebuffer, and color them by the
+    // stock fire palette
     for(int i = 0; i < total_pixels; ++i) {
         target_array->data[i] = fire_palette[intensity[i]];
     }

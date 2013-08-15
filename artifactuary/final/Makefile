@@ -59,9 +59,9 @@ ARTIFACTUARY_SRC=$(GLUS_SRC) \
 	scroll.c \
 	
 
-.PHONY: all clean
+.PHONY: all cleanall clean
 
-%.o: %.c *.h
+%.o: %.c
 	gcc -g -O2 -W -Wall --std=gnu99 -fgnu89-inline -c -o $@ -DGLUS_ES2 -I ./GLUS -I /opt/vc/include -I /opt/vc/include/interface/vcos/pthreads -I /opt/vc/include/interface/vmcs_host/linux $<
 
 artifactuary: $(patsubst %.c,%.o,$(ARTIFACTUARY_SRC) $(GLUS_SRC))
@@ -69,8 +69,13 @@ artifactuary: $(patsubst %.c,%.o,$(ARTIFACTUARY_SRC) $(GLUS_SRC))
 
 all: artifactuary
 
+cleanall:
+	for X in artifactuary *.o GLUS/*.o; do \
+	  if [ -f $$X ]; then rm $$X; fi \
+	done
+
 clean:
-	for X in viz1 *.o GLUS/*.o; do \
+	for X in artifactuary *.o; do \
 	  if [ -f $$X ]; then rm $$X; fi \
 	done
 

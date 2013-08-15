@@ -34,12 +34,8 @@ array_t artifactuary_arrays[ARTIFACTUARY_NUM_ARRAYS] = {
 		.height = ARTIFACTUARY_BUILDING_2_FACE_1_HEIGHT,
 	},
 	{
-		.width = ARTIFACTUARY_BUILDING_3_FACE_0_WIDTH,
-		.height = ARTIFACTUARY_BUILDING_3_FACE_0_HEIGHT,
-	},
-	{
-		.width = ARTIFACTUARY_BUILDING_3_FACE_1_WIDTH,
-		.height = ARTIFACTUARY_BUILDING_3_FACE_1_HEIGHT,
+		.width = ARTIFACTUARY_BUILDING_3_WIDTH,
+		.height = ARTIFACTUARY_BUILDING_3_HEIGHT,
 	},
 	{
 		.width = ARTIFACTUARY_CITYSCAPE_WIDTH,
@@ -84,7 +80,7 @@ void artifactuary_init(void)
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
         fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
-    scroll_init(&artifactuary_scroll_state, ARTIFACTUARY_BUILDING_3_FACE_0_WIDTH, ARTIFACTUARY_BUILDING_3_FACE_0_HEIGHT);
+    scroll_init(&artifactuary_scroll_state, ARTIFACTUARY_BUILDING_3_WIDTH, ARTIFACTUARY_BUILDING_3_HEIGHT);
 }
 
 
@@ -112,7 +108,9 @@ void artifactuary_process(float time)
     process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
     
-    //printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
+    if(time > 0.034) {
+        printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
+    }
 }
 
 

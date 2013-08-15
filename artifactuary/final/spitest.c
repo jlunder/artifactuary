@@ -51,14 +51,15 @@ int main(int argc, char* argv[])
     ioctl(fd, SPI_IOC_WR_MODE, &mode);
     
     write(fd, data_clear, sizeof data_clear);
-    for(int j = 0; j < 1000; ++j) {
+    //for(int j = 0; j < 1000; ++j) {
+    while(true) {
         struct timespec start_time;
         struct timespec end_time;
         struct timespec sleep_time = {.tv_sec = 0, .tv_nsec = 1000000};
         int64_t nsec;
         
         for(int i = 0; i < sizeof data; ++i) {
-            data[((i - i % 3) + (i + 1) % 3 + j * 3) % sizeof data] = (palette[i % 60] * (sizeof data - i)) / sizeof data;
+            data[((i - i % 3) + (i + 1) % 3 + 300/*j * 3*/) % sizeof data] = (palette[i % 60] * (sizeof data - i)) / sizeof data;
         }
         
         clock_gettime(CLOCK_MONOTONIC, &start_time);
@@ -97,3 +98,4 @@ int main(int argc, char* argv[])
     
     return 0;
 }
+
