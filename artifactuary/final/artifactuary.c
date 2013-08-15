@@ -95,7 +95,7 @@ void artifactuary_process(float time)
     process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
     
-    printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time);
+    printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
 }
 
 

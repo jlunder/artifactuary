@@ -95,7 +95,7 @@ void spi_harness_output_spi_data(void)
     // output the frame over the SPI bus
     
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS * 3; i += 3) {
-        int32_t index = artifactuary_array_data_mapping[i];
+        int32_t index = artifactuary_array_data_mapping[i / 3];
         spi_frame_data[i + 0] = artifactuary_array_data[index].c.b;
         spi_frame_data[i + 1] = artifactuary_array_data[index].c.r;
         spi_frame_data[i + 2] = artifactuary_array_data[index].c.g;

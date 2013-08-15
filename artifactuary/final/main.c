@@ -5,7 +5,7 @@
 
 int main(int argc, char* argv[])
 {
-    if(argc > 1 && strcmp(argv[2], "test") == 0) {
+    if(argc > 1 && strcmp(argv[1], "test") == 0) {
         gles2_harness_main();
     }
     else {
