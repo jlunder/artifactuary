@@ -9,10 +9,7 @@ typedef struct fire_state
 {
     int32_t width;
     int32_t height;
-    int32_t total_pixels;
-    int32_t kernel_offsets[2];
-    int32_t left_kernel_offsets[2];
-    int32_t right_kernel_offsets[2];
+    int32_t jitter;
     uint8_t* intensity;
 } fire_state_t;
 

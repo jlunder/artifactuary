@@ -59,18 +59,28 @@ void artifactuary_init(void)
 {
     rgba_t* data = artifactuary_array_data;
 	
+	// init modules
     array_init();
     
+    // set up data pointers in the framebuffer arrays manually
+    // this is so we can address the data as one linear block when we're
+    // remapping the data to output it to the light array
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
         artifactuary_arrays[i].data = data;
         data += artifactuary_arrays[i].width * artifactuary_arrays[i].height;
     }
     
+    // set up the data mapping for the light array
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS; ++i) {
         artifactuary_array_data_mapping[i] = i;
+    }
+    
+    // initialize the panels all to full white so they're visible in the test program
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS; ++i) {
         artifactuary_array_data[i].rgba = 0xFFFFFFFF;
     }
     
+    // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
         fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
@@ -89,17 +99,20 @@ void artifactuary_process(float time)
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
     
+    // process fire backgrounds for all panels
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
         fire_process(&artifactuary_fire_state[i], time, &artifactuary_arrays[i]);
     }
-    scroll_process(&artifactuary_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_3_FACE_0]);
+    // process scrolling text for the tall building
+    scroll_process(&artifactuary_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_3]);
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
+    // compute the CPU time used by the processing
     process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
     
-    printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
+    //printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
 }
 
 

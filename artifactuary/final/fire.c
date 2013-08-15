@@ -11,57 +11,75 @@ void fire_init(fire_state_t* state, int32_t width, int32_t height)
     // intensity buffer is actually oversize by 1 row
     state->intensity = malloc(sizeof (uint8_t) * width * (height + 1));
     memset(state->intensity, 0, sizeof (uint8_t) * width * (height + 1));
-    
-    state->kernel_offsets[0] = width - 1 + width;
-    state->kernel_offsets[1] = 1 + width;
-    state->left_kernel_offsets[0] = -1 + width;
-    state->left_kernel_offsets[1] = 1 + width;
-    state->right_kernel_offsets[0] = -1 + width;
-    state->right_kernel_offsets[1] = -width + 1 + width;
+    state->jitter = 0;
 }
 
 
 void fire_process(fire_state_t* state, float time, array_t* target_array)
 {
     int32_t total_pixels = state->width * state->height;
+    int32_t width = state->width;
+    int32_t height = state->height;
+    uint8_t* intensity = state->intensity;
     
     // put fire seed (embers?) in the bottom row of the (oversize) buffer
-    for(int32_t i = 0; i < ((state->width + 5) / 10); ++i) {
-        state->intensity[total_pixels + rand() % state->width] = 255;
-        state->intensity[total_pixels + rand() % state->width] = 0;
+    // jitter biases the rounding of the number of embers to modify so that
+    // they average out to exactly 10% of the pixels per frame over time
+    for(int32_t i = 0; i < ((width + state->jitter) / 10); ++i) {
+        intensity[total_pixels + rand() % width] = 255;
+        intensity[total_pixels + rand() % width] = 0;
+    }
+    ++state->jitter;
+    if(state->jitter >= 10) {
+    	state->jitter = 0;
     }
     
-    for(int32_t j = 0, data_pos = 0; j < state->height; ++j) {
-        state->intensity[data_pos] =
-            ((int32_t)state->intensity[data_pos + state->left_kernel_offsets[0]] +
-             (int32_t)state->intensity[data_pos + state->left_kernel_offsets[1]] +
-             (int32_t)state->intensity[data_pos + state->width] +
-             (int32_t)state->intensity[data_pos] +
+    // do video feedback on the fire intensity buffer, top to bottom
+    for(int32_t j = 0, data_pos = 0; j < height; ++j) {
+    	// the convolution kernel for the video feedback samples from the
+    	// current point and from the three points below this one (left,
+    	// center, right). going top to bottom we don't have to worry about
+    	// the processing from previous points in the same buffer affecting
+    	// later ones.
+    	
+    	// left edge: when sampling to the left of this pixel wrap to the
+    	// right hand side
+        intensity[data_pos] =
+            ((int32_t)intensity[data_pos + -1 + width] +
+             (int32_t)intensity[data_pos + 1 + width] +
+             (int32_t)intensity[data_pos + width] +
+             (int32_t)intensity[data_pos] +
              2) >> 2;
         ++data_pos;
-        for(int32_t i = 1; i < state->width - 1; ++i) {
-            state->intensity[data_pos] =
-                ((int32_t)state->intensity[data_pos + state->kernel_offsets[0]] +
-                 (int32_t)state->intensity[data_pos + state->kernel_offsets[1]] +
-                 (int32_t)state->intensity[data_pos + state->width] +
-                 (int32_t)state->intensity[data_pos] +
+        
+        // sample all the middle pixels naively
+        for(int32_t i = 1; i < width - 1; ++i) {
+            intensity[data_pos] =
+                ((int32_t)intensity[data_pos + width - 1 + width] +
+                 (int32_t)intensity[data_pos + 1 + width] +
+                 (int32_t)intensity[data_pos + width] +
+                 (int32_t)intensity[data_pos] +
                  2) >> 2;
             ++data_pos;
         }
-        state->intensity[data_pos] =
-            ((int32_t)state->intensity[data_pos + state->right_kernel_offsets[0]] +
-             (int32_t)state->intensity[data_pos + state->right_kernel_offsets[1]] +
-             (int32_t)state->intensity[data_pos + state->width] +
-             (int32_t)state->intensity[data_pos] +
+        
+        // right edge: when sampling to the right of this pixel wrap to the
+        // left hand side
+        intensity[data_pos] =
+            ((int32_t)intensity[data_pos + -1 + width] +
+             (int32_t)intensity[data_pos + -width + 1 + width] +
+             (int32_t)intensity[data_pos + width] +
+             (int32_t)intensity[data_pos] +
              2) >> 2;
         ++data_pos;
     }
     
-    assert(state->width == target_array->width);
-    assert(state->height == target_array->height);
+    assert(width == target_array->width);
+    assert(height == target_array->height);
     
+    // copy the 
     for(int i = 0; i < total_pixels; ++i) {
-        target_array->data[i] = fire_palette[state->intensity[i]];
+        target_array->data[i] = fire_palette[intensity[i]];
     }
 }
 

@@ -3,6 +3,7 @@
 #include "array.h"
 
 
+// these tables contain the precomputed alpha fade functions.
 uint8_t array_alpha_table[256][256];
 uint8_t array_one_minus_alpha_table[256][256];
 
