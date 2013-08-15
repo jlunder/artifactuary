@@ -20,21 +20,21 @@ void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text,
 
 void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
 {
-    state->array_width = width;
+    state->array_width = width << 8;
     state->current_message = NULL;
     state->current_message_width = 0;
     state->next_message = NULL;
     state->next_message_width = 0;
     state->queued_message = NULL;
     state->scroll_distance = 0;
-    state->scroll_speed = 0;
+    state->scroll_speed = ((1 << 8) * 3 + 15) / 30; // 3 / 30 pixels per frame = 3 pixels per second
     
     assert(height >= SCROLL_CHAR_HEIGHT);
     
     state->vertical_pos = (height - SCROLL_CHAR_HEIGHT) / 2;
     
-    state->current_message = strdup("Hello Playa!");
-    state->current_message_width = strlen(state->current_message) * SCROLL_CHAR_WIDTH;
+    state->current_message = strdup("H\x01ello Playa!");
+    state->current_message_width = (strlen(state->current_message) * SCROLL_CHAR_WIDTH) << 8;
 }
 
 
@@ -48,7 +48,7 @@ void scroll_process(scroll_state_t* state, float time, array_t* target_array)
     
     do {
         stable = true;
-        if((state->scroll_distance >= state->current_message_width + state->array_width) && (state->current_message != NULL)) {
+        if((state->current_message != NULL) && (state->scroll_distance >= state->current_message_width + state->array_width)) {
             state->scroll_distance -= state->current_message_width;
             if(state->current_message != NULL) {
                 free(state->current_message);
@@ -101,6 +101,8 @@ scroll_glyph_t const* scroll_get_glyph(char c)
 void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color)
 {
     int32_t pixel_pos = (state->array_width - text_offset) >> 8;
+    
+    //printf("drawing message \"%s\" at [%d] %d,%d\n", text, text_offset, pixel_pos, state->vertical_pos);
     
     while(pixel_pos < 0)
     {

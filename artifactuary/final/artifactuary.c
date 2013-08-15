@@ -51,7 +51,7 @@ rgba_t artifactuary_array_data[ARTIFACTUARY_NUM_PIXELS];
 int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 
-fire_state_t artifactuary_fire_state;
+fire_state_t artifactuary_fire_state[ARTIFACTUARY_NUM_ARRAYS];
 scroll_state_t artifactuary_scroll_state;
 
 
@@ -71,7 +71,9 @@ void artifactuary_init(void)
         artifactuary_array_data[i].rgba = 0xFFFFFFFF;
     }
     
-    fire_init(&artifactuary_fire_state, ARTIFACTUARY_CITYSCAPE_WIDTH, ARTIFACTUARY_CITYSCAPE_HEIGHT);
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
+    }
     scroll_init(&artifactuary_scroll_state, ARTIFACTUARY_BUILDING_3_FACE_0_WIDTH, ARTIFACTUARY_BUILDING_3_FACE_0_HEIGHT);
 }
 
@@ -87,7 +89,9 @@ void artifactuary_process(float time)
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
     
-    fire_process(&artifactuary_fire_state, time, &artifactuary_arrays[ARTIFACTUARY_CITYSCAPE]);
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        fire_process(&artifactuary_fire_state[i], time, &artifactuary_arrays[i]);
+    }
     scroll_process(&artifactuary_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_3_FACE_0]);
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
