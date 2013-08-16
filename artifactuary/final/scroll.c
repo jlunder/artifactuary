@@ -27,7 +27,7 @@ void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
     state->next_message_width = 0;
     state->queued_message = NULL;
     state->scroll_distance = 0;
-    state->scroll_speed = ((1 << 8) * 3 + 15) / 30; // 3 / 30 pixels per frame = 3 pixels per second
+    state->scroll_speed = ((1 << 8) * 10 + 15) / 30; // 10 / 30 pixels per frame = 3 pixels per second
     
     assert(height >= SCROLL_CHAR_HEIGHT);
     
@@ -78,7 +78,7 @@ void scroll_process(scroll_state_t* state, float time, array_t* target_array)
     }
     
     if(state->current_message != NULL) {
-        rgba_t color = {{255, 255, 255, 255}};
+        rgba_t color = {{  0, 255,   0, 255}};
         scroll_draw(state, target_array, state->current_message, state->scroll_distance, color);
         if(state->next_message != NULL) {
             scroll_draw(state, target_array, state->next_message, state->scroll_distance - state->current_message_width, color);

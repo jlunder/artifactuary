@@ -48,7 +48,8 @@ int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 
 fire_state_t artifactuary_fire_state[ARTIFACTUARY_NUM_ARRAYS];
-scroll_state_t artifactuary_scroll_state;
+scroll_state_t artifactuary_short_scroll_state;
+scroll_state_t artifactuary_tall_scroll_state;
 
 
 void artifactuary_init(void)
@@ -78,11 +79,11 @@ void artifactuary_init(void)
 	
 		for(int32_t j = 0; j < height; j += 2) {
 			for(int32_t i = 0; i < width; ++i) {
-				artifactuary_array_data_mapping[j] = base + width - 1 - i;
+				artifactuary_array_data_mapping[base + i] = base + width - 1 - i;
 			}
 			base += width;
 			for(int32_t i = 0; i < width; ++i) {
-				artifactuary_array_data_mapping[j] = base + i;
+				artifactuary_array_data_mapping[base + i] = base + i;
 			}
 			base += width;
 		}
@@ -97,7 +98,8 @@ void artifactuary_init(void)
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
         fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
-    scroll_init(&artifactuary_scroll_state, ARTIFACTUARY_BUILDING_3_WIDTH, ARTIFACTUARY_BUILDING_3_HEIGHT);
+    scroll_init(&artifactuary_short_scroll_state, ARTIFACTUARY_BUILDING_0_FACE_0_WIDTH, ARTIFACTUARY_BUILDING_0_FACE_0_HEIGHT);
+    scroll_init(&artifactuary_tall_scroll_state, ARTIFACTUARY_BUILDING_3_WIDTH, ARTIFACTUARY_BUILDING_3_HEIGHT);
 }
 
 
@@ -117,7 +119,8 @@ void artifactuary_process(float time)
         fire_process(&artifactuary_fire_state[i], time, &artifactuary_arrays[i]);
     }
     // process scrolling text for the tall building
-    scroll_process(&artifactuary_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_3]);
+    scroll_process(&artifactuary_short_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_0_FACE_0]);
+    scroll_process(&artifactuary_tall_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_3]);
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
