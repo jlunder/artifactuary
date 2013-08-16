@@ -71,6 +71,23 @@ void artifactuary_init(void)
         artifactuary_array_data_mapping[i] = i;
     }
     
+    {
+		int32_t base = 0;
+		int32_t width = ARTIFACTUARY_BUILDING_0_FACE_0_WIDTH;
+		int32_t height = ARTIFACTUARY_BUILDING_0_FACE_0_HEIGHT;
+	
+		for(int32_t j = 0; j < height; j += 2) {
+			for(int32_t i = 0; i < width; ++i) {
+				artifactuary_array_data_mapping[j] = base + width - 1 - i;
+			}
+			base += width;
+			for(int32_t i = 0; i < width; ++i) {
+				artifactuary_array_data_mapping[j] = base + i;
+			}
+			base += width;
+		}
+    }
+    
     // initialize the panels all to full white so they're visible in the test program
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS; ++i) {
         artifactuary_array_data[i].rgba = 0xFFFFFFFF;

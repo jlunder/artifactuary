@@ -14,6 +14,27 @@
 #define FRAME_NSEC 33333333
 
 
+// this gamma table purposely only goes to 127 because full brightness is
+// TOO BRIGHT
+uint8_t spi_harness_gamma_table[256]  = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,
+    2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,
+    4,  4,  4,  4,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,  7,  7,
+    7,  7,  7,  8,  8,  8,  8,  9,  9,  9,  9, 10, 10, 10, 10, 11,
+   11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15, 16, 16,
+   16, 17, 17, 17, 18, 18, 18, 19, 19, 20, 20, 21, 21, 21, 22, 22,
+   23, 23, 24, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30,
+   30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 37, 37, 38, 38, 39,
+   40, 40, 41, 41, 42, 43, 43, 44, 45, 45, 46, 47, 47, 48, 49, 50,
+   50, 51, 52, 52, 53, 54, 55, 55, 56, 57, 58, 58, 59, 60, 61, 62,
+   62, 63, 64, 65, 66, 67, 67, 68, 69, 70, 71, 72, 73, 74, 74, 75,
+   76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91,
+   92, 93, 94, 95, 96, 97, 98, 99,100,101,102,104,105,106,107,108,
+  109,110,111,113,114,115,116,117,118,120,121,122,123,125,126,127
+};
+
 int spi_harness_fd;
 
 
@@ -94,11 +115,11 @@ void spi_harness_output_spi_data(void)
     
     // output the frame over the SPI bus
     
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_PIXELS * 3; i += 3) {
-        int32_t index = artifactuary_array_data_mapping[i / 3];
-        spi_frame_data[i + 0] = artifactuary_array_data[index].c.b;
-        spi_frame_data[i + 1] = artifactuary_array_data[index].c.r;
-        spi_frame_data[i + 2] = artifactuary_array_data[index].c.g;
+    for(int32_t i = 0, j = 0; i < ARTIFACTUARY_NUM_PIXELS; ++i, j += 3) {
+        int32_t index = artifactuary_array_data_mapping[i];
+        spi_frame_data[j + 0] = spi_harness_gamma_table[artifactuary_array_data[index].c.b];
+        spi_frame_data[j + 1] = spi_harness_gamma_table[artifactuary_array_data[index].c.r];
+        spi_frame_data[j + 2] = spi_harness_gamma_table[artifactuary_array_data[index].c.g];
     }
     
     memset(&xfer, 0, sizeof xfer);
