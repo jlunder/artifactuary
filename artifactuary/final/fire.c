@@ -31,19 +31,19 @@ void fire_process(fire_state_t* state, float time, array_t* target_array)
     }
     ++state->jitter;
     if(state->jitter >= 10) {
-    	state->jitter = 0;
+        state->jitter = 0;
     }
     
     // do video feedback on the fire intensity buffer, top to bottom
     for(int32_t j = 0, data_pos = 0; j < height; ++j) {
-    	// the convolution kernel for the video feedback samples from the
-    	// current point and from the three points below this one (left,
-    	// center, right). going top to bottom we don't have to worry about
-    	// the processing from previous points in the same buffer affecting
-    	// later ones.
-    	
-    	// left edge: when sampling to the left of this pixel wrap to the
-    	// right hand side
+        // the convolution kernel for the video feedback samples from the
+        // current point and from the three points below this one (left,
+        // center, right). going top to bottom we don't have to worry about
+        // the processing from previous points in the same buffer affecting
+        // later ones.
+        
+        // left edge: when sampling to the left of this pixel wrap to the
+        // right hand side
         intensity[data_pos] =
             ((int32_t)intensity[data_pos + -1 + width] +
              (int32_t)intensity[data_pos + 1 + width] +

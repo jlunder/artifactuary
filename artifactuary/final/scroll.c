@@ -31,7 +31,7 @@ void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
     
     assert(height >= SCROLL_CHAR_HEIGHT);
     
-    state->vertical_pos = (height - SCROLL_CHAR_HEIGHT) / 2;
+    state->vertical_pos = 0;
     
     state->current_message = strdup("H\x01ello Playa!");
     state->current_message_width = (strlen(state->current_message) * SCROLL_CHAR_WIDTH) << 8;
@@ -41,6 +41,9 @@ void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
 void scroll_process(scroll_state_t* state, float time, array_t* target_array)
 {
     bool stable;
+    
+    assert((target_array->width << 8) == state->array_width);
+    assert(target_array->height >= state->vertical_pos + SCROLL_CHAR_HEIGHT);
     
     if(state->current_message != NULL) {
         state->scroll_distance += state->scroll_speed;

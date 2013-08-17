@@ -21,6 +21,8 @@ static GLuint g_verticesVBO;
 
 static GLfloat g_aspectRatio;
 
+int32_t gles2_harness_light_index = 0;
+
 
 GLUSboolean gles2_harness_init(GLUSvoid)
 {
@@ -91,6 +93,11 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     
     artifactuary_process(time);
     
+    artifactuary_array_data[artifactuary_array_data_mapping[gles2_harness_light_index]].c.r = 0;
+    artifactuary_array_data[artifactuary_array_data_mapping[gles2_harness_light_index]].c.g = 0;
+    artifactuary_array_data[artifactuary_array_data_mapping[gles2_harness_light_index]].c.b = 255;
+    gles2_harness_light_index = (gles2_harness_light_index + 1) % ARTIFACTUARY_NUM_PIXELS;
+    
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -119,8 +126,8 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     arrays_total_width = -array_spacing;
     arrays_total_height = 0.0f;
     
-    assert(ARTIFACTUARY_CITYSCAPE == ARTIFACTUARY_NUM_ARRAYS - 1);
-    for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS - 1; ++k) {
+    assert(ARTIFACTUARY_BACKDROP == 0);
+    for(int32_t k = 1; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
         GLfloat array_width = artifactuary_arrays[k].width * pixel_spacing;
         GLfloat array_height = artifactuary_arrays[k].height * pixel_spacing;
         
@@ -131,19 +138,19 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     }
     
     // add the height of the cityscape panel
-    arrays_total_height += array_spacing + ARTIFACTUARY_CITYSCAPE_HEIGHT * pixel_spacing;
+    arrays_total_height += array_spacing + ARTIFACTUARY_BACKDROP_HEIGHT * pixel_spacing;
     
     for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
         GLfloat base_x = arrays_total_width * -0.5f;
         GLfloat base_y = arrays_total_height * -0.5f;
         array_t* array = &artifactuary_arrays[k];
         
-        if(k == ARTIFACTUARY_CITYSCAPE) {
-            base_x = ARTIFACTUARY_CITYSCAPE_WIDTH * pixel_spacing * -0.5f;
+        if(k == ARTIFACTUARY_BACKDROP) {
+            base_x = ARTIFACTUARY_BACKDROP_WIDTH * pixel_spacing * -0.5f;
+            base_y += arrays_total_height - ARTIFACTUARY_BACKDROP_HEIGHT * pixel_spacing;
         }
         else {
             base_x += arrays_cur_x;
-            base_y += ARTIFACTUARY_CITYSCAPE_HEIGHT * pixel_spacing + array_spacing;
         }
         
         for(int32_t j = 0, data_pos = 0; j < array->height; ++j) {
@@ -162,7 +169,7 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
             }
         }
-        if(k != ARTIFACTUARY_CITYSCAPE) {
+        if(k != ARTIFACTUARY_BACKDROP) {
             arrays_cur_x += array->width * pixel_spacing + array_spacing;
         }
     }
@@ -170,6 +177,7 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     glDisableVertexAttribArray(g_vertexLocation);
     
     glUseProgram(0);
+    
     
     return GLUS_TRUE;
 }

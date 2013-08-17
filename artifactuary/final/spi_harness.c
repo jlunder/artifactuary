@@ -53,7 +53,7 @@ void spi_harness_main(void)
     spi_harness_fd = open("/dev/spidev0.0", O_RDWR);
     
     if(spi_harness_fd <= 0) {
-        perror("failed to open /dev/spidev0.0\n");
+        perror("failed to open /dev/spidev0.0 (try running as root)\n");
         return;
     }
     
@@ -124,6 +124,8 @@ void spi_harness_output_spi_data(void)
     
     memset(&xfer, 0, sizeof xfer);
     
+    // this transfer is broken in two because the SPI_IOC_MESSAGE ioctl seems
+    // to barf if you give it more than 4k of data at a time.
     xfer[0].tx_buf = (intptr_t)spi_frame_data;
     xfer[0].len = sizeof spi_frame_data / 2;
     xfer[0].delay_usecs = 0;
