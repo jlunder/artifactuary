@@ -69,19 +69,19 @@ void spi_harness_loop(void)
 {
     struct timespec wall_start_time;
     struct timespec wall_cur_time;
+    int64_t start_nsec;
     int64_t cur_nsec;
     int64_t last_target_nsec;
     int64_t next_target_nsec;
     
     clock_gettime(CLOCK_MONOTONIC, &wall_start_time);
-    cur_nsec = wall_start_time.tv_nsec + (int64_t)wall_start_time.tv_sec * BILLION;
+    start_nsec = wall_start_time.tv_nsec + (int64_t)wall_start_time.tv_sec * BILLION;
+    cur_nsec = start_nsec;
     next_target_nsec = cur_nsec + FRAME_NSEC;
     last_target_nsec = cur_nsec;
     
     while(true) {
-        double last_frame_sec = (double)(next_target_nsec - last_target_nsec) * 1.0e-9;
-        
-        artifactuary_process(last_frame_sec);
+        artifactuary_process(last_target_nsec - start_nsec, next_target_nsec - last_target_nsec);
         
         clock_gettime(CLOCK_MONOTONIC, &wall_cur_time);
         cur_nsec = wall_cur_time.tv_nsec + (int64_t)wall_cur_time.tv_sec * BILLION;

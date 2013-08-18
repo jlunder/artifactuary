@@ -1,10 +1,10 @@
-#include "fire.h"
+#include "effect_joe_fire.h"
 
 
-rgba_t fire_palette[256];
+rgba_t effect_joe_fire_palette[256];
 
 
-void fire_init(fire_state_t* state, int32_t width, int32_t height)
+void effect_joe_fire_init(effect_joe_fire_state_t* state, int32_t width, int32_t height)
 {
     state->width = width;
     state->height = height;
@@ -15,8 +15,9 @@ void fire_init(fire_state_t* state, int32_t width, int32_t height)
 }
 
 
-void fire_process(fire_state_t* state, float time, array_t* target_array)
+void effect_joe_fire_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
 {
+    effect_joe_fire_state_t* state = (effect_joe_fire_state_t*)void_state;
     int32_t total_pixels = state->width * state->height;
     int32_t width = state->width;
     int32_t height = state->height;
@@ -80,12 +81,12 @@ void fire_process(fire_state_t* state, float time, array_t* target_array)
     // copy the intensities into the framebuffer, and color them by the
     // stock fire palette
     for(int i = 0; i < total_pixels; ++i) {
-        target_array->data[i] = fire_palette[intensity[i]];
+        target_array->data[i] = effect_joe_fire_palette[intensity[i]];
     }
 }
 
 
-rgba_t fire_palette[256] = {
+rgba_t effect_joe_fire_palette[256] = {
     {{  0,   0,   0, 255}},
     {{  0,   0,   0, 255}},
     {{  0,   0,   0, 255}},

@@ -1,24 +1,24 @@
-#include "scroll.h"
+#include "effect_joe_text_scroll.h"
 
 
-#define SCROLL_CHAR_WIDTH 8
-#define SCROLL_CHAR_HEIGHT 8
-#define SCROLL_CHARSET_START 32
-#define SCROLL_CHARSET_END 128
+#define EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH 8
+#define EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT 8
+#define EFFECT_JOE_TEXT_SCROLL_CHARSET_START 32
+#define EFFECT_JOE_TEXT_SCROLL_CHARSET_END 128
 
 
-typedef struct scroll_glyph {
-    uint8_t scanlines[SCROLL_CHAR_HEIGHT];
-} scroll_glyph_t;
+typedef struct effect_joe_text_scroll_glyph {
+    uint8_t scanlines[EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT];
+} effect_joe_text_scroll_glyph_t;
 
-scroll_glyph_t scroll_font[SCROLL_CHARSET_END - SCROLL_CHARSET_START];
-
-
-scroll_glyph_t const* scroll_get_glyph(char c);
-void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color);
+effect_joe_text_scroll_glyph_t effect_joe_text_scroll_font[EFFECT_JOE_TEXT_SCROLL_CHARSET_END - EFFECT_JOE_TEXT_SCROLL_CHARSET_START];
 
 
-void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
+effect_joe_text_scroll_glyph_t const* effect_joe_text_scroll_get_glyph(char c);
+void effect_joe_text_scroll_draw(effect_joe_text_scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color);
+
+
+void effect_joe_text_scroll_init(effect_joe_text_scroll_state_t* state, int32_t width, int32_t height)
 {
     state->array_width = width << 8;
     state->current_message = NULL;
@@ -29,21 +29,22 @@ void scroll_init(scroll_state_t* state, int32_t width, int32_t height)
     state->scroll_distance = 0;
     state->scroll_speed = ((1 << 8) * 10 + 15) / 30; // 10 / 30 pixels per frame = 3 pixels per second
     
-    assert(height >= SCROLL_CHAR_HEIGHT);
+    assert(height >= EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT);
     
     state->vertical_pos = 0;
     
-    state->current_message = strdup("H\x01ello Playa!");
-    state->current_message_width = (strlen(state->current_message) * SCROLL_CHAR_WIDTH) << 8;
+    state->current_message = strdup("Hello Playa!");
+    state->current_message_width = (strlen(state->current_message) * EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH) << 8;
 }
 
 
-void scroll_process(scroll_state_t* state, float time, array_t* target_array)
+void effect_joe_text_scroll_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
 {
+    effect_joe_text_scroll_state_t* state = (effect_joe_text_scroll_state_t*)void_state;
     bool stable;
     
     assert((target_array->width << 8) == state->array_width);
-    assert(target_array->height >= state->vertical_pos + SCROLL_CHAR_HEIGHT);
+    assert(target_array->height >= state->vertical_pos + EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT);
     
     if(state->current_message != NULL) {
         state->scroll_distance += state->scroll_speed;
@@ -82,26 +83,26 @@ void scroll_process(scroll_state_t* state, float time, array_t* target_array)
     
     if(state->current_message != NULL) {
         rgba_t color = {{  0, 255,   0, 255}};
-        scroll_draw(state, target_array, state->current_message, state->scroll_distance, color);
+        effect_joe_text_scroll_draw(state, target_array, state->current_message, state->scroll_distance, color);
         if(state->next_message != NULL) {
-            scroll_draw(state, target_array, state->next_message, state->scroll_distance - state->current_message_width, color);
+            effect_joe_text_scroll_draw(state, target_array, state->next_message, state->scroll_distance - state->current_message_width, color);
         }
     }
 }
 
 
-scroll_glyph_t const* scroll_get_glyph(char c)
+effect_joe_text_scroll_glyph_t const* effect_joe_text_scroll_get_glyph(char c)
 {
-    if((c < SCROLL_CHARSET_START) || (c >= SCROLL_CHARSET_END)) {
-        return &scroll_font[rand() % (SCROLL_CHARSET_END - SCROLL_CHARSET_START)];
+    if((c < EFFECT_JOE_TEXT_SCROLL_CHARSET_START) || (c >= EFFECT_JOE_TEXT_SCROLL_CHARSET_END)) {
+        return &effect_joe_text_scroll_font[rand() % (EFFECT_JOE_TEXT_SCROLL_CHARSET_END - EFFECT_JOE_TEXT_SCROLL_CHARSET_START)];
     }
     else {
-        return &scroll_font[c - SCROLL_CHARSET_START];
+        return &effect_joe_text_scroll_font[c - EFFECT_JOE_TEXT_SCROLL_CHARSET_START];
     }
 }
 
 
-void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color)
+void effect_joe_text_scroll_draw(effect_joe_text_scroll_state_t* state, array_t* target_array, char const* text, int32_t text_offset, rgba_t text_color)
 {
     int32_t pixel_pos = (state->array_width - text_offset) >> 8;
     
@@ -113,14 +114,14 @@ void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text,
             return;
         }
         
-        if(pixel_pos + SCROLL_CHAR_WIDTH > 0) {
-            scroll_glyph_t const* glyph = scroll_get_glyph(*text);
+        if(pixel_pos + EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH > 0) {
+            effect_joe_text_scroll_glyph_t const* glyph = effect_joe_text_scroll_get_glyph(*text);
             
             // a char clipped on the left
-            for(int j = 0; j < SCROLL_CHAR_HEIGHT; ++j) {
+            for(int j = 0; j < EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT; ++j) {
                 uint32_t scanline = glyph->scanlines[j];
                 scanline = scanline >> -pixel_pos;
-                for(int i = -pixel_pos; (scanline != 0) && (i < SCROLL_CHAR_WIDTH); ++i) {
+                for(int i = -pixel_pos; (scanline != 0) && (i < EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH); ++i) {
                     if(scanline & 1) {
                         target_array->data[(state->vertical_pos + j) * target_array->width + pixel_pos + i] = text_color;
                     }
@@ -129,22 +130,22 @@ void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text,
             }
         }
         
-        pixel_pos += SCROLL_CHAR_WIDTH;
+        pixel_pos += EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH;
         ++text;
     }
     
-    while(pixel_pos + SCROLL_CHAR_WIDTH < target_array->width) {
-        scroll_glyph_t const* glyph;
+    while(pixel_pos + EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH < target_array->width) {
+        effect_joe_text_scroll_glyph_t const* glyph;
         
         if(*text == 0) {
             return;
         }
         
-        glyph = scroll_get_glyph(*text);
+        glyph = effect_joe_text_scroll_get_glyph(*text);
         // an unclipped char
-        for(int j = 0; j < SCROLL_CHAR_HEIGHT; ++j) {
+        for(int j = 0; j < EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT; ++j) {
             uint32_t scanline = glyph->scanlines[j];
-            for(int i = 0; (scanline != 0) && (i < SCROLL_CHAR_WIDTH); ++i) {
+            for(int i = 0; (scanline != 0) && (i < EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH); ++i) {
                 if(scanline & 1) {
                      target_array->data[(state->vertical_pos + j) * target_array->width + pixel_pos + i] = text_color;
                 }
@@ -152,7 +153,7 @@ void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text,
             }
         }
         
-        pixel_pos += SCROLL_CHAR_WIDTH;
+        pixel_pos += EFFECT_JOE_TEXT_SCROLL_CHAR_WIDTH;
         ++text;
     }
     
@@ -160,9 +161,9 @@ void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text,
         return;
     }
     if((pixel_pos < target_array->width) && (*text != 0)) {
-        scroll_glyph_t const* glyph = scroll_get_glyph(*text);
+        effect_joe_text_scroll_glyph_t const* glyph = effect_joe_text_scroll_get_glyph(*text);
         // a clipped char on the right!
-        for(int j = 0; j < SCROLL_CHAR_HEIGHT; ++j) {
+        for(int j = 0; j < EFFECT_JOE_TEXT_SCROLL_CHAR_HEIGHT; ++j) {
             uint32_t scanline = glyph->scanlines[j];
             for(int i = 0; (scanline != 0) && (i < (target_array->width - pixel_pos)); ++i) {
                 if(scanline & 1) {
@@ -175,7 +176,7 @@ void scroll_draw(scroll_state_t* state, array_t* target_array, char const* text,
 }
 
 
-scroll_glyph_t scroll_font[SCROLL_CHARSET_END - SCROLL_CHARSET_START] = { 
+effect_joe_text_scroll_glyph_t effect_joe_text_scroll_font[EFFECT_JOE_TEXT_SCROLL_CHARSET_END - EFFECT_JOE_TEXT_SCROLL_CHARSET_START] = { 
     {.scanlines = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
     {.scanlines = {0x18, 0x18, 0x18, 0x18, 0x00, 0x00, 0x18, 0x00}},
     {.scanlines = {0x66, 0x66, 0x66, 0x00, 0x00, 0x00, 0x00, 0x00}},

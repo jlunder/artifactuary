@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "fire.h"
-#include "scroll.h"
+#include "effect_joe_fire.h"
+#include "effect_joe_text_scroll.h"
 
 
 // the data pointers are set up in artifactuary_init
@@ -35,9 +35,9 @@ rgba_t artifactuary_array_data[ARTIFACTUARY_NUM_PIXELS];
 int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 
-fire_state_t artifactuary_fire_state[ARTIFACTUARY_NUM_ARRAYS];
-scroll_state_t artifactuary_short_scroll_state;
-scroll_state_t artifactuary_tall_scroll_state;
+effect_joe_fire_state_t artifactuary_fire_state[ARTIFACTUARY_NUM_ARRAYS];
+effect_joe_text_scroll_state_t artifactuary_short_scroll_state;
+effect_joe_text_scroll_state_t artifactuary_tall_scroll_state;
 
 
 void artifactuary_generate_data_mapping(void);
@@ -69,10 +69,10 @@ void artifactuary_init(void)
     
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
+        effect_joe_fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
-    //scroll_init(&artifactuary_short_scroll_state, ARTIFACTUARY_BACKDROP_WIDTH, ARTIFACTUARY_BACKDROP_HEIGHT);
-    scroll_init(&artifactuary_tall_scroll_state, ARTIFACTUARY_BUILDING_A_WIDTH, ARTIFACTUARY_BUILDING_A_HEIGHT);
+    //effect_joe_text_scroll_init(&artifactuary_short_scroll_state, ARTIFACTUARY_BACKDROP_WIDTH, ARTIFACTUARY_BACKDROP_HEIGHT);
+    effect_joe_text_scroll_init(&artifactuary_tall_scroll_state, ARTIFACTUARY_BUILDING_A_WIDTH, ARTIFACTUARY_BUILDING_A_HEIGHT);
 }
 
 
@@ -93,9 +93,13 @@ void artifactuary_generate_data_mapping(void)
         //       array orientations happens.
         switch(array) {
         case ARTIFACTUARY_BACKDROP:
-            //panel_count = 1;
-            panel_count = 3;
-            panel_order = PANEL_RIGHT_TO_LEFT;
+            panel_count = 1;
+            if(artifactuary_arrays[array].height % 2 == 0) {
+	            panel_order = PANEL_LEFT_TO_RIGHT;
+            }
+            else {
+	            panel_order = PANEL_RIGHT_TO_LEFT;
+	        }
             vdir = DIR_DOWN; // Vlad: for even panel counts this should be DIR_UP
             break;
             
@@ -139,7 +143,7 @@ void artifactuary_generate_data_mapping(void)
         // check that the panel count results in sane panel widths for this
         // array width
         assert(artifactuary_arrays[array].width % panel_count == 0);
-        assert((panel_width == 8) || (panel_width == 10));
+        assert((panel_width % 8 == 0) || (panel_width % 10 == 0));
         
         // this is the workhorse loop. for every panel, it walks up and down,
         // sided to side, tracing the path of the lights and noting the
@@ -247,7 +251,7 @@ void artifactuary_generate_data_mapping(void)
 #define BILLION 1000000000
 
 
-void artifactuary_process(float time)
+void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
 {
     struct timespec process_start_time;
     struct timespec process_end_time;
@@ -257,11 +261,11 @@ void artifactuary_process(float time)
     
     // process fire backgrounds for all panels
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        fire_process(&artifactuary_fire_state[i], time, &artifactuary_arrays[i]);
+        effect_joe_fire_process(&artifactuary_fire_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
     }
     // process scrolling text for the tall building
-    //scroll_process(&artifactuary_short_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BACKDROP]);
-    scroll_process(&artifactuary_tall_scroll_state, time, &artifactuary_arrays[ARTIFACTUARY_BUILDING_A]);
+    //effect_joe_text_scroll_process(&artifactuary_short_scroll_state, &artifactuary_arrays[ARTIFACTUARY_BACKDROP], total_time_ns, frame_time_ns);
+    effect_joe_text_scroll_process(&artifactuary_tall_scroll_state, &artifactuary_arrays[ARTIFACTUARY_BUILDING_A], total_time_ns, frame_time_ns);
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
@@ -269,8 +273,8 @@ void artifactuary_process(float time)
     process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
     
-    if(time > 0.034) {
-        printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, time * 1000.0);
+    if(frame_time_ns >= 33400000) {
+        printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, (double)frame_time_ns * 1.0e-6);
     }
 }
 

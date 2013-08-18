@@ -113,8 +113,9 @@ ARTIFACTUARY_SRC= \
 	artifactuary.c \
 	array.c \
 	main.c \
-	fire.c \
-	scroll.c \
+	effect_joe_fire.c \
+	effect_joe_text_scroll.c \
+	effect_timer_select.c \
 	gles2_harness.c \
 	spi_harness.c
 

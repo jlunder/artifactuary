@@ -30,7 +30,7 @@
 //  - the backdrop panel must have an even number of rows
 //  - all building panels must have odd numbers of rows
 #define ARTIFACTUARY_BACKDROP_WIDTH 30
-#define ARTIFACTUARY_BACKDROP_HEIGHT 5
+#define ARTIFACTUARY_BACKDROP_HEIGHT 4
 #define ARTIFACTUARY_BUILDING_B_WIDTH 20
 #define ARTIFACTUARY_BUILDING_B_HEIGHT 23
 #define ARTIFACTUARY_BUILDING_B2_WIDTH 10
@@ -51,6 +51,9 @@
 #include "array.h"
 
 
+typedef void (*effect_process_function_t)(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+
+
 // the framebuffers for the various sculpture panels
 extern array_t artifactuary_arrays[ARTIFACTUARY_NUM_ARRAYS];
 
@@ -63,7 +66,7 @@ extern int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 
 void artifactuary_init(void);
-void artifactuary_process(float time);
+void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns);
 
 
 #endif

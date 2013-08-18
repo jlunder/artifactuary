@@ -22,6 +22,7 @@ static GLuint g_verticesVBO;
 static GLfloat g_aspectRatio;
 
 int32_t gles2_harness_light_index = 0;
+int64_t gles2_harness_total_nsec = 0;
 
 
 GLUSboolean gles2_harness_init(GLUSvoid)
@@ -90,8 +91,12 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     GLfloat arrays_total_height;
     GLfloat arrays_cur_x = 0.0f;
     
+    int64_t frame_nsec = (int64_t)round(time * 1.0e9);
     
-    artifactuary_process(time);
+    
+    artifactuary_process(gles2_harness_total_nsec, frame_nsec);
+    
+    gles2_harness_total_nsec += frame_nsec;
     
     artifactuary_array_data[artifactuary_array_data_mapping[gles2_harness_light_index]].c.r = 0;
     artifactuary_array_data[artifactuary_array_data_mapping[gles2_harness_light_index]].c.g = 0;
