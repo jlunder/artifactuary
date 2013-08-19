@@ -1,10 +1,21 @@
 #include "artifactuary.h"
 
+#include <ncurses.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <time.h>
 
 #include "effect_joe_fire.h"
 #include "effect_joe_text_scroll.h"
+
+
+typedef enum {
+    MODE_NONE,
+    MODE_BLANK,
+    MODE_FRAME,
+    MODE_FIRE,
+    MODE_COUNT,
+} artifactuary_mode_t;
 
 
 // the data pointers are set up in artifactuary_init
@@ -35,12 +46,24 @@ rgba_t artifactuary_array_data[ARTIFACTUARY_NUM_PIXELS];
 int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
 
+int64_t artifactuary_last_process_nsec = 0;
+int64_t artifactuary_last_frame_time_nsec = 0;
+
+artifactuary_mode_t artifactuary_mode = MODE_NONE;
+artifactuary_mode_t artifactuary_next_mode = MODE_FIRE;
+
 effect_joe_fire_state_t artifactuary_fire_state[ARTIFACTUARY_NUM_ARRAYS];
-effect_joe_text_scroll_state_t artifactuary_short_scroll_state;
-effect_joe_text_scroll_state_t artifactuary_tall_scroll_state;
 
 
 void artifactuary_generate_data_mapping(void);
+void artifactuary_ui_init(void);
+
+void artifactuary_ui_process();
+void artifactuary_ui_draw();
+
+void artifactuary_mode_fire_init(void);
+void artifactuary_mode_fire_shutdown(void);
+void artifactuary_mode_fire_process(int64_t total_time_ns, int64_t frame_time_ns);
 
 
 void artifactuary_init(void)
@@ -67,12 +90,7 @@ void artifactuary_init(void)
         artifactuary_array_data[i].rgba = 0xFFFFFFFF;
     }
     
-    // initialize all the state structures used by the panel image generation
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
-    }
-    //effect_joe_text_scroll_init(&artifactuary_short_scroll_state, ARTIFACTUARY_BACKDROP_WIDTH, ARTIFACTUARY_BACKDROP_HEIGHT);
-    effect_joe_text_scroll_init(&artifactuary_tall_scroll_state, ARTIFACTUARY_BUILDING_A_WIDTH, ARTIFACTUARY_BUILDING_A_HEIGHT);
+    artifactuary_ui_init();
 }
 
 
@@ -248,6 +266,121 @@ void artifactuary_generate_data_mapping(void)
 }
 
 
+void artifactuary_ui_init(void)
+{
+#ifdef USE_NCURSES
+    initscr();
+    raw();
+    keypad(stdscr, TRUE);
+    noecho();
+    timeout(0);
+    
+    artifactuary_ui_draw();
+    
+    //endwin();
+#endif
+}
+
+
+void artifactuary_ui_process(void)
+{
+#ifdef USE_NCURSES
+    int ch;
+    bool ui_modified = false;
+    
+    ch = getch();
+    if(ch != ERR) {
+        while(ch != ERR) {
+            switch(ch) {
+            case 'q':
+                endwin();
+                exit(0);
+                break;
+            case KEY_LEFT:
+                artifactuary_next_mode -= 1;
+                if(artifactuary_next_mode <= MODE_NONE) {
+                    artifactuary_next_mode = MODE_COUNT - 1;
+                }
+                break;
+            case KEY_RIGHT:
+                artifactuary_next_mode += 1;
+                if(artifactuary_next_mode >= MODE_COUNT) {
+                    artifactuary_next_mode = MODE_NONE + 1;
+                }
+                break;
+            }
+            ch = getch();
+        }
+    }
+    
+    if(artifactuary_next_mode != artifactuary_mode) {
+        ui_modified = true;
+    }
+    
+    if(ui_modified) {
+        artifactuary_ui_draw();
+    }
+    
+    move(5, 0);
+    if(artifactuary_last_process_nsec > 5000000 || artifactuary_last_frame_time_nsec > 34000000) {
+        attron(A_BOLD);
+    }
+    printw("frame time: %7.3fms/%7.3fms", (double)artifactuary_last_frame_time_nsec * 1.0e-6, (double)artifactuary_last_process_nsec * 1.0e-6);
+    attroff(A_BOLD);
+    refresh();
+#else
+    // autoplay mode
+#endif
+}
+
+
+void artifactuary_ui_draw(void)
+{
+#ifdef USE_NCURSES
+    char const* mode_name;
+    
+    switch(artifactuary_next_mode) {
+    case MODE_NONE: mode_name = "none (?)"; break;
+    case MODE_BLANK: mode_name = "blank white"; break;
+    case MODE_FRAME: mode_name = "rainbow frames"; break;
+    case MODE_FIRE: mode_name = "fire"; break;
+    default: mode_name = "!UNKNOWN!"; break;
+    }
+    
+    erase();
+    
+    move(0, 0);
+    printw("   ---ARTIFACTUARY---\n");
+    printw("\n");
+    printw("current mode: %s\n", mode_name);
+    printw("\n");
+#endif
+}
+
+
+void artifactuary_mode_fire_init(void)
+{
+    // initialize all the state structures used by the panel image generation
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_joe_fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
+    }
+}
+
+
+void artifactuary_mode_fire_shutdown(void)
+{
+}
+
+
+void artifactuary_mode_fire_process(int64_t total_time_ns, int64_t frame_time_ns)
+{
+    // process fire backgrounds for all panels
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_joe_fire_process(&artifactuary_fire_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
+    }
+}
+
+
 #define BILLION 1000000000
 
 
@@ -255,27 +388,82 @@ void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
 {
     struct timespec process_start_time;
     struct timespec process_end_time;
-    int64_t process_nsec;
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
     
-    // process fire backgrounds for all panels
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_process(&artifactuary_fire_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
+    artifactuary_ui_process();
+    
+    if(artifactuary_next_mode != artifactuary_mode) {
+        switch(artifactuary_mode) {
+        case MODE_FIRE:
+            artifactuary_mode_fire_shutdown();
+            break;
+        default:
+            break;
+        }
+        artifactuary_mode = artifactuary_next_mode;
+        switch(artifactuary_mode) {
+        case MODE_FIRE:
+            artifactuary_mode_fire_init();
+            break;
+        default:
+            break;
+        }
     }
-    // process scrolling text for the tall building
-    //effect_joe_text_scroll_process(&artifactuary_short_scroll_state, &artifactuary_arrays[ARTIFACTUARY_BACKDROP], total_time_ns, frame_time_ns);
-    effect_joe_text_scroll_process(&artifactuary_tall_scroll_state, &artifactuary_arrays[ARTIFACTUARY_BUILDING_A], total_time_ns, frame_time_ns);
+    
+    switch(artifactuary_mode) {
+    case MODE_NONE:
+        // fill the array black
+        memset(artifactuary_array_data, 0, sizeof artifactuary_array_data);
+        break;
+    case MODE_BLANK:
+        // fill the array white
+        memset(artifactuary_array_data, 255, sizeof artifactuary_array_data);
+        break;
+    case MODE_FRAME:
+        for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
+            int32_t width = artifactuary_arrays[k].width;
+            int32_t height = artifactuary_arrays[k].height;
+            
+            // resistor color sequence
+            rgba_t array_colors[] = {
+                {{  0,   0,   0, 255}}, // black
+                {{127,  63,   0, 255}}, // brown
+                {{255,   0,   0, 255}}, // red
+                {{255, 127,   0, 255}}, // orange
+                {{191, 191,   0, 255}}, // yellow
+                {{  0, 255,   0, 255}}, // green
+                {{  0,   0, 255, 255}}, // blue
+                {{127,   0, 127, 255}}, // purple
+                {{ 63,  63,  63, 255}}, // grey
+                {{255, 255, 255, 255}}, // white
+            };
+            // fill array with the appropriate color
+            for(int32_t i = 0; i < width * height; ++i) {
+                artifactuary_arrays[k].data[i] = array_colors[k];
+            }
+            // draw white frame around the array
+            for(int32_t j = 0; j < height; ++j) {
+                artifactuary_arrays[k].data[j * width + 0].rgba = 0xFFFFFFFF;
+                artifactuary_arrays[k].data[j * width + width - 1].rgba = 0xFFFFFFFF;
+            }
+            for(int32_t i = 0; i < artifactuary_arrays[k].width; ++i) {
+                artifactuary_arrays[k].data[0 * width + i].rgba = 0xFFFFFFFF;
+                artifactuary_arrays[k].data[(height - 1) * width + i].rgba = 0xFFFFFFFF;
+            }
+        }
+        break;
+    case MODE_FIRE:
+        artifactuary_mode_fire_process(total_time_ns, frame_time_ns);
+        break;
+    }
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
     
     // compute the CPU time used by the processing
-    process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
+    artifactuary_last_process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
         (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
-    
-    if(frame_time_ns >= 33400000) {
-        printf("frame time: %7.3fms/%7.3fms\n", (double)process_nsec * 1.0e-6, (double)frame_time_ns * 1.0e-6);
-    }
+    artifactuary_last_frame_time_nsec = frame_time_ns;
 }
 
 

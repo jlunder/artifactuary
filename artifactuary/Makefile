@@ -28,6 +28,10 @@ else
 	endif
 endif
 
+
+USE_NCURSES=1
+
+
 GLUS_COMMON_SRC= \
 	GLUS/glus_extension.c \
 	GLUS/glus_load.c \
@@ -96,6 +100,12 @@ ifeq ($(OS), WIN32)
 	CFLAGS=
 	CPPFLAGS=
 	LDFLAGS=
+endif
+
+
+ifeq ($(USE_NCURSES), 1)
+	CPPFLAGS+= -DUSE_NCURSES
+	LDFLAGS+= -lncurses
 endif
 
 
