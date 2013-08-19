@@ -126,6 +126,8 @@ ARTIFACTUARY_SRC= \
 	effect_joe_fire.c \
 	effect_joe_text_scroll.c \
 	effect_timer_select.c \
+	effect_vlad_fire_0.c \
+	effect_vlad_plasma_0.c \
 	gles2_harness.c \
 	spi_harness.c
 

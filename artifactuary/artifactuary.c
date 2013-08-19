@@ -6,6 +6,8 @@
 #include <time.h>
 
 #include "effect_joe_fire.h"
+#include "effect_vlad_fire_0.h"
+#include "effect_vlad_plasma_0.h"
 #include "effect_joe_text_scroll.h"
 
 
@@ -13,7 +15,9 @@ typedef enum {
     MODE_NONE,
     MODE_BLANK,
     MODE_FRAME,
-    MODE_FIRE,
+    MODE_JOE_FIRE,
+    MODE_VLAD_FIRE_0,
+    MODE_VLAD_PLASMA_0,
     MODE_COUNT,
 } artifactuary_mode_t;
 
@@ -50,9 +54,10 @@ int64_t artifactuary_last_process_nsec = 0;
 int64_t artifactuary_last_frame_time_nsec = 0;
 
 artifactuary_mode_t artifactuary_mode = MODE_NONE;
-artifactuary_mode_t artifactuary_next_mode = MODE_FIRE;
+artifactuary_mode_t artifactuary_next_mode = MODE_VLAD_FIRE_0;
 
-effect_joe_fire_state_t artifactuary_fire_state[ARTIFACTUARY_NUM_ARRAYS];
+effect_joe_fire_state_t artifactuary_joe_fire_state[ARTIFACTUARY_NUM_ARRAYS];
+effect_vlad_fire_0_state_t artifactuary_vlad_fire_0_state[ARTIFACTUARY_NUM_ARRAYS];
 
 
 void artifactuary_generate_data_mapping(void);
@@ -61,9 +66,17 @@ void artifactuary_ui_init(void);
 void artifactuary_ui_process();
 void artifactuary_ui_draw();
 
-void artifactuary_mode_fire_init(void);
-void artifactuary_mode_fire_shutdown(void);
-void artifactuary_mode_fire_process(int64_t total_time_ns, int64_t frame_time_ns);
+void artifactuary_mode_frame_process(int64_t total_time_ns, int64_t frame_time_ns);
+
+void artifactuary_mode_joe_fire_init(void);
+void artifactuary_mode_joe_fire_shutdown(void);
+void artifactuary_mode_joe_fire_process(int64_t total_time_ns, int64_t frame_time_ns);
+
+void artifactuary_mode_vlad_fire_0_init(void);
+void artifactuary_mode_vlad_fire_0_shutdown(void);
+void artifactuary_mode_vlad_fire_0_process(int64_t total_time_ns, int64_t frame_time_ns);
+
+void artifactuary_mode_vlad_plasma_0_process(int64_t total_time_ns, int64_t frame_time_ns);
 
 
 void artifactuary_init(void)
@@ -282,6 +295,75 @@ void artifactuary_ui_init(void)
 }
 
 
+#define BILLION 1000000000
+
+
+void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
+{
+    struct timespec process_start_time;
+    struct timespec process_end_time;
+    
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
+    
+    artifactuary_ui_process();
+    
+    if(artifactuary_next_mode != artifactuary_mode) {
+        switch(artifactuary_mode) {
+        case MODE_JOE_FIRE:
+            artifactuary_mode_joe_fire_shutdown();
+            break;
+        case MODE_VLAD_FIRE_0:
+            artifactuary_mode_vlad_fire_0_shutdown();
+            break;
+        default:
+            break;
+        }
+        artifactuary_mode = artifactuary_next_mode;
+        switch(artifactuary_mode) {
+        case MODE_JOE_FIRE:
+            artifactuary_mode_joe_fire_init();
+            break;
+        case MODE_VLAD_FIRE_0:
+            artifactuary_mode_vlad_fire_0_init();
+            break;
+        default:
+            break;
+        }
+    }
+    
+    switch(artifactuary_mode) {
+    default:
+    case MODE_NONE:
+        // fill the array black
+        memset(artifactuary_array_data, 0, sizeof artifactuary_array_data);
+        break;
+    case MODE_BLANK:
+        // fill the array white
+        memset(artifactuary_array_data, 255, sizeof artifactuary_array_data);
+        break;
+    case MODE_FRAME:
+        artifactuary_mode_frame_process(total_time_ns, frame_time_ns);
+        break;
+    case MODE_JOE_FIRE:
+        artifactuary_mode_joe_fire_process(total_time_ns, frame_time_ns);
+        break;
+    case MODE_VLAD_FIRE_0:
+        artifactuary_mode_vlad_fire_0_process(total_time_ns, frame_time_ns);
+        break;
+    case MODE_VLAD_PLASMA_0:
+        artifactuary_mode_vlad_plasma_0_process(total_time_ns, frame_time_ns);
+        break;
+    }
+    
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
+    
+    // compute the CPU time used by the processing
+    artifactuary_last_process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
+        (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
+    artifactuary_last_frame_time_nsec = frame_time_ns;
+}
+
+
 void artifactuary_ui_process(void)
 {
 #ifdef USE_NCURSES
@@ -340,9 +422,11 @@ void artifactuary_ui_draw(void)
     
     switch(artifactuary_next_mode) {
     case MODE_NONE: mode_name = "none (?)"; break;
-    case MODE_BLANK: mode_name = "blank white"; break;
-    case MODE_FRAME: mode_name = "rainbow frames"; break;
-    case MODE_FIRE: mode_name = "fire"; break;
+    case MODE_BLANK: mode_name = "blank white (debug)"; break;
+    case MODE_FRAME: mode_name = "rainbow frames (debug)"; break;
+    case MODE_JOE_FIRE: mode_name = "fire (joe)"; break;
+    case MODE_VLAD_FIRE_0: mode_name = "fire 0 (vlad)"; break;
+    case MODE_VLAD_PLASMA_0: mode_name = "plasma 0 (vlad)"; break;
     default: mode_name = "!UNKNOWN!"; break;
     }
     
@@ -357,112 +441,102 @@ void artifactuary_ui_draw(void)
 }
 
 
-void artifactuary_mode_fire_init(void)
+void artifactuary_mode_frame_process(int64_t total_time_ns, int64_t frame_time_ns)
+{
+    for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
+        int32_t width = artifactuary_arrays[k].width;
+        int32_t height = artifactuary_arrays[k].height;
+        
+        // resistor color sequence
+        rgba_t array_colors[] = {
+            {{  0,   0,   0, 255}}, // black
+            {{127,  63,   0, 255}}, // brown
+            {{255,   0,   0, 255}}, // red
+            {{255, 127,   0, 255}}, // orange
+            {{191, 191,   0, 255}}, // yellow
+            {{  0, 255,   0, 255}}, // green
+            {{  0,   0, 255, 255}}, // blue
+            {{127,   0, 127, 255}}, // purple
+            {{ 63,  63,  63, 255}}, // grey
+            {{255, 255, 255, 255}}, // white
+        };
+        // fill array with the appropriate color
+        for(int32_t i = 0; i < width * height; ++i) {
+            artifactuary_arrays[k].data[i] = array_colors[k];
+        }
+        // draw white frame around the array
+        for(int32_t j = 0; j < height; ++j) {
+            artifactuary_arrays[k].data[j * width + 0].rgba = 0xFFFFFFFF;
+            artifactuary_arrays[k].data[j * width + width - 1].rgba = 0xFFFFFFFF;
+        }
+        for(int32_t i = 0; i < artifactuary_arrays[k].width; ++i) {
+            artifactuary_arrays[k].data[0 * width + i].rgba = 0xFFFFFFFF;
+            artifactuary_arrays[k].data[(height - 1) * width + i].rgba = 0xFFFFFFFF;
+        }
+    }
+}
+
+
+void artifactuary_mode_joe_fire_init(void)
 {
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_init(&artifactuary_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
+        effect_joe_fire_init(&artifactuary_joe_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
 }
 
 
-void artifactuary_mode_fire_shutdown(void)
+void artifactuary_mode_joe_fire_shutdown(void)
 {
+    // initialize all the state structures used by the panel image generation
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_joe_fire_shutdown(&artifactuary_joe_fire_state[i]);
+    }
 }
 
 
-void artifactuary_mode_fire_process(int64_t total_time_ns, int64_t frame_time_ns)
+void artifactuary_mode_joe_fire_process(int64_t total_time_ns, int64_t frame_time_ns)
 {
     // process fire backgrounds for all panels
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_process(&artifactuary_fire_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
+        effect_joe_fire_process(&artifactuary_joe_fire_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
     }
 }
 
 
-#define BILLION 1000000000
-
-
-void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
+void artifactuary_mode_vlad_fire_0_init(void)
 {
-    struct timespec process_start_time;
-    struct timespec process_end_time;
-    
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_start_time);
-    
-    artifactuary_ui_process();
-    
-    if(artifactuary_next_mode != artifactuary_mode) {
-        switch(artifactuary_mode) {
-        case MODE_FIRE:
-            artifactuary_mode_fire_shutdown();
-            break;
-        default:
-            break;
-        }
-        artifactuary_mode = artifactuary_next_mode;
-        switch(artifactuary_mode) {
-        case MODE_FIRE:
-            artifactuary_mode_fire_init();
-            break;
-        default:
-            break;
-        }
+    // initialize all the state structures used by the panel image generation
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_vlad_fire_0_init(&artifactuary_vlad_fire_0_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
-    
-    switch(artifactuary_mode) {
-    case MODE_NONE:
-        // fill the array black
-        memset(artifactuary_array_data, 0, sizeof artifactuary_array_data);
-        break;
-    case MODE_BLANK:
-        // fill the array white
-        memset(artifactuary_array_data, 255, sizeof artifactuary_array_data);
-        break;
-    case MODE_FRAME:
-        for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
-            int32_t width = artifactuary_arrays[k].width;
-            int32_t height = artifactuary_arrays[k].height;
-            
-            // resistor color sequence
-            rgba_t array_colors[] = {
-                {{  0,   0,   0, 255}}, // black
-                {{127,  63,   0, 255}}, // brown
-                {{255,   0,   0, 255}}, // red
-                {{255, 127,   0, 255}}, // orange
-                {{191, 191,   0, 255}}, // yellow
-                {{  0, 255,   0, 255}}, // green
-                {{  0,   0, 255, 255}}, // blue
-                {{127,   0, 127, 255}}, // purple
-                {{ 63,  63,  63, 255}}, // grey
-                {{255, 255, 255, 255}}, // white
-            };
-            // fill array with the appropriate color
-            for(int32_t i = 0; i < width * height; ++i) {
-                artifactuary_arrays[k].data[i] = array_colors[k];
-            }
-            // draw white frame around the array
-            for(int32_t j = 0; j < height; ++j) {
-                artifactuary_arrays[k].data[j * width + 0].rgba = 0xFFFFFFFF;
-                artifactuary_arrays[k].data[j * width + width - 1].rgba = 0xFFFFFFFF;
-            }
-            for(int32_t i = 0; i < artifactuary_arrays[k].width; ++i) {
-                artifactuary_arrays[k].data[0 * width + i].rgba = 0xFFFFFFFF;
-                artifactuary_arrays[k].data[(height - 1) * width + i].rgba = 0xFFFFFFFF;
-            }
-        }
-        break;
-    case MODE_FIRE:
-        artifactuary_mode_fire_process(total_time_ns, frame_time_ns);
-        break;
+}
+
+
+void artifactuary_mode_vlad_fire_0_shutdown(void)
+{
+    // initialize all the state structures used by the panel image generation
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_vlad_fire_0_shutdown(&artifactuary_vlad_fire_0_state[i]);
     }
-    
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
-    
-    // compute the CPU time used by the processing
-    artifactuary_last_process_nsec = process_end_time.tv_nsec + (int64_t)process_end_time.tv_sec * BILLION -
-        (process_start_time.tv_nsec + (int64_t)process_start_time.tv_sec * BILLION);
-    artifactuary_last_frame_time_nsec = frame_time_ns;
+}
+
+
+void artifactuary_mode_vlad_fire_0_process(int64_t total_time_ns, int64_t frame_time_ns)
+{
+    // process fire backgrounds for all panels
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_vlad_fire_0_process(&artifactuary_vlad_fire_0_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
+    }
+}
+
+
+void artifactuary_mode_vlad_plasma_0_process(int64_t total_time_ns, int64_t frame_time_ns)
+{
+    // process fire backgrounds for all panels
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        effect_vlad_plasma_0_process(NULL, &artifactuary_arrays[i], total_time_ns + i * 10000000000LL, frame_time_ns);
+    }
 }
 
 

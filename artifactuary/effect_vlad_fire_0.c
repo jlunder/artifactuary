@@ -1,99 +1,83 @@
-#include "effect_joe_fire.h"
+#include "effect_vlad_fire_0.h"
 
 
-rgba_t effect_joe_fire_palette[256];
+rgba_t effect_vlad_fire_0_palette[256];
 
 
-void effect_joe_fire_init(effect_joe_fire_state_t* state, int32_t width, int32_t height)
+void effect_vlad_fire_0_init(effect_vlad_fire_0_state_t* state, int32_t width, int32_t height)
 {
     state->width = width;
     state->height = height;
-    // intensity buffer is actually oversize by 1 row
-    state->intensity = malloc(sizeof (uint8_t) * width * (height + 1));
-    memset(state->intensity, 0, sizeof (uint8_t) * width * (height + 1));
-    state->jitter = 0;
+    state->intensity = (uint8_t*)malloc((width + 2) * (height + 2) * sizeof (uint8_t));
+    memset(state->intensity, 0, (width + 2) * (height + 2) * sizeof (uint8_t));
 }
 
 
-void effect_joe_fire_shutdown(effect_joe_fire_state_t* state)
+void effect_vlad_fire_0_shutdown(effect_vlad_fire_0_state_t* state)
 {
     free(state->intensity);
-    state->intensity = NULL;
 }
 
 
-void effect_joe_fire_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
+void effect_vlad_fire_0_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
 {
-    effect_joe_fire_state_t* state = (effect_joe_fire_state_t*)void_state;
-    int32_t total_pixels = state->width * state->height;
-    int32_t width = state->width;
-    int32_t height = state->height;
+    int32_t width = target_array->width;
+    int32_t height = target_array->height;
+    int32_t intensity_width = width + 2;
+    int32_t intensity_height = height + 2;
+    rgba_t* data = target_array->data;
+    effect_vlad_fire_0_state_t* state = (effect_vlad_fire_0_state_t*)void_state;
     uint8_t* intensity = state->intensity;
     
-    // put fire seed (embers?) in the bottom row of the (oversize) buffer
-    // jitter biases the rounding of the number of embers to modify so that
-    // they average out to exactly 10% of the pixels per frame over time
-    for(int32_t i = 0; i < ((width + state->jitter) / 10); ++i) {
-        intensity[total_pixels + rand() % width] = 255;
-        intensity[total_pixels + rand() % width] = 0;
-    }
-    ++state->jitter;
-    if(state->jitter >= 10) {
-        state->jitter = 0;
-    }
+    assert(width == state->width);
+    assert(height == state->height);
     
-    // do video feedback on the fire intensity buffer, top to bottom
-    for(int32_t j = 0, data_pos = 0; j < height; ++j) {
-        // the convolution kernel for the video feedback samples from the
-        // current point and from the three points below this one (left,
-        // center, right). going top to bottom we don't have to worry about
-        // the processing from previous points in the same buffer affecting
-        // later ones.
+    // put random data (embers) in the last and second-last rows
+    for(int x = 0; x < width + 2; x++)
+    {
+        int32_t randomOff = rand() % 3;
         
-        // left edge: when sampling to the left of this pixel wrap to the
-        // right hand side
-        intensity[data_pos] =
-            ((int32_t)intensity[data_pos + -1 + width] +
-             (int32_t)intensity[data_pos + 1 + width] +
-             (int32_t)intensity[data_pos + width] +
-             (int32_t)intensity[data_pos] +
-             2) >> 2;
-        ++data_pos;
-        
-        // sample all the middle pixels naively
-        for(int32_t i = 1; i < width - 1; ++i) {
-            intensity[data_pos] =
-                ((int32_t)intensity[data_pos + width - 1 + width] +
-                 (int32_t)intensity[data_pos + 1 + width] +
-                 (int32_t)intensity[data_pos + width] +
-                 (int32_t)intensity[data_pos] +
-                 2) >> 2;
-            ++data_pos;
+        if(randomOff == 0)
+        {
+            intensity[(intensity_height - 2) * intensity_width + x] = 64;
+            intensity[(intensity_height - 1) * intensity_width + x] = 64;
         }
-        
-        // right edge: when sampling to the right of this pixel wrap to the
-        // left hand side
-        intensity[data_pos] =
-            ((int32_t)intensity[data_pos + -1 + width] +
-             (int32_t)intensity[data_pos + -width + 1 + width] +
-             (int32_t)intensity[data_pos + width] +
-             (int32_t)intensity[data_pos] +
-             2) >> 2;
-        ++data_pos;
+        else {
+            intensity[(intensity_height - 2) * intensity_width + x] = rand() % 256;
+            intensity[(intensity_height - 1) * intensity_width + x] = rand() % 224 + 32;
+        }
     }
     
-    assert(width == target_array->width);
-    assert(height == target_array->height);
-    
-    // copy the intensities into the framebuffer, and color them by the
-    // stock fire palette
-    for(int i = 0; i < total_pixels; ++i) {
-        target_array->data[i] = effect_joe_fire_palette[intensity[i]];
+    for(int y = 0; y < intensity_height - 2; y++)
+    {
+        for(int x = 1; x < intensity_width - 1; x++) 
+        {
+            int32_t flameDampen = rand() % 256 + 128;
+            int32_t flameValue =
+                (int32_t)intensity[(y + 0) * intensity_width + x + 0] +
+                (int32_t)intensity[(y + 1) * intensity_width + x - 1] +
+                (int32_t)intensity[(y + 1) * intensity_width + x + 0] +
+                (int32_t)intensity[(y + 1) * intensity_width + x + 1] +
+                (int32_t)intensity[(y + 2) * intensity_width + x + 0];
+            if(flameDampen > flameValue)
+            {
+                flameValue = 0;
+            }
+            intensity[(y + 0) * intensity_width + x + 0] = (uint8_t)(flameValue / 5);
+        }
+    }
+
+    for(int x = 0; x < width; x++) 
+    {
+        for(int y = 0; y < height; y++)
+        {
+            data[y * width + x] = effect_vlad_fire_0_palette[intensity[y * intensity_width + x + 1]];
+        }
     }
 }
 
 
-rgba_t effect_joe_fire_palette[256] = {
+rgba_t effect_vlad_fire_0_palette[256] = {
     {{  0,   0,   0, 255}},
     {{  0,   0,   0, 255}},
     {{  0,   0,   0, 255}},

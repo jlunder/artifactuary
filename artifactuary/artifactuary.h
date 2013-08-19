@@ -64,6 +64,14 @@ extern rgba_t artifactuary_array_data[ARTIFACTUARY_NUM_PIXELS];
 // lights and the
 extern int32_t artifactuary_array_data_mapping[ARTIFACTUARY_NUM_PIXELS];
 
+/*
+extern float artifactuary_time_of_day;
+extern int32_t artifactuary_day;
+extern int32_t artifactuary_time_of_day_hour;
+extern int32_t artifactuary_time_of_day_minute;
+extern int32_t artifactuary_time_of_day_second;
+*/
+
 
 void artifactuary_init(void);
 void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns);
