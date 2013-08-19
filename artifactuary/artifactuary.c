@@ -293,7 +293,6 @@ void artifactuary_ui_process(void)
         while(ch != ERR) {
             switch(ch) {
             case 'q':
-                endwin();
                 exit(0);
                 break;
             case KEY_LEFT:
