@@ -277,7 +277,7 @@ void artifactuary_ui_init(void)
     
     artifactuary_ui_draw();
     
-    //endwin();
+    atexit(endwin);
 #endif
 }
 
