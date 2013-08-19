@@ -42,6 +42,16 @@ void effect_joe_fire_process(void* void_state, array_t* target_array, int64_t to
         state->jitter = 0;
     }
     
+    // dampen fire
+    for(int i = 0; i < total_pixels; ++i) {
+        if(intensity[i] < 48) {
+            intensity[i] = 0;
+        }
+        if(intensity[i] > 1) {
+            intensity[i] -= 1;
+        }
+    }
+    
     // do video feedback on the fire intensity buffer, top to bottom
     for(int32_t j = 0, data_pos = 0; j < height; ++j) {
         // the convolution kernel for the video feedback samples from the
