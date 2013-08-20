@@ -1,21 +1,46 @@
 #include "effect_vlad_fire_0.h"
 
 
+typedef struct effect_vlad_fire_0_state
+{
+    int32_t width;
+    int32_t height;
+    uint8_t* intensity;
+} effect_vlad_fire_0_state_t;
+
+
+void effect_vlad_fire_0_destroy(void* void_state);
+void effect_vlad_fire_0_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+
+
 rgba_t effect_vlad_fire_0_palette[256];
 
 
-void effect_vlad_fire_0_init(effect_vlad_fire_0_state_t* state, int32_t width, int32_t height)
+effect_t* effect_vlad_fire_0_create(int32_t width, int32_t height)
 {
+    effect_t* effect = effect_alloc();
+    effect_vlad_fire_0_state_t* state = (effect_vlad_fire_0_state_t*)malloc(sizeof (effect_vlad_fire_0_state_t));
+    
+    effect->void_state = state;
+    effect->process = &effect_vlad_fire_0_process;
+    effect->destroy = &effect_vlad_fire_0_destroy;
+    
     state->width = width;
     state->height = height;
     state->intensity = (uint8_t*)malloc((width + 2) * (height + 2) * sizeof (uint8_t));
+    
     memset(state->intensity, 0, (width + 2) * (height + 2) * sizeof (uint8_t));
+    
+    return effect;
 }
 
 
-void effect_vlad_fire_0_shutdown(effect_vlad_fire_0_state_t* state)
+void effect_vlad_fire_0_destroy(void* void_state)
 {
+    effect_vlad_fire_0_state_t* state = (effect_vlad_fire_0_state_t*)void_state;
+    
     free(state->intensity);
+    free(state);
 }
 
 

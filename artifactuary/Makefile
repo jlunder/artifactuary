@@ -122,6 +122,7 @@ ARTIFACTUARY_SRC= \
 	$(GLUS_SRC) \
 	artifactuary.c \
 	array.c \
+	effect.c \
 	main.c \
 	effect_joe_fire.c \
 	effect_joe_text_scroll.c \

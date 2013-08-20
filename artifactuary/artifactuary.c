@@ -8,7 +8,6 @@
 #include "effect_joe_fire.h"
 #include "effect_vlad_fire_0.h"
 #include "effect_vlad_plasma_0.h"
-#include "effect_joe_text_scroll.h"
 
 
 typedef enum {
@@ -56,8 +55,7 @@ int64_t artifactuary_last_frame_time_nsec = 0;
 artifactuary_mode_t artifactuary_mode = MODE_NONE;
 artifactuary_mode_t artifactuary_next_mode = MODE_VLAD_FIRE_0;
 
-effect_joe_fire_state_t artifactuary_joe_fire_state[ARTIFACTUARY_NUM_ARRAYS];
-effect_vlad_fire_0_state_t artifactuary_vlad_fire_0_state[ARTIFACTUARY_NUM_ARRAYS];
+effect_t* artifactuary_effects[ARTIFACTUARY_NUM_ARRAYS];
 
 
 void artifactuary_generate_data_mapping(void);
@@ -66,17 +64,14 @@ void artifactuary_ui_init(void);
 void artifactuary_ui_process();
 void artifactuary_ui_draw();
 
-void artifactuary_mode_frame_process(int64_t total_time_ns, int64_t frame_time_ns);
-
+void artifactuary_mode_blank_init(void);
+void artifactuary_mode_frame_init(void);
 void artifactuary_mode_joe_fire_init(void);
-void artifactuary_mode_joe_fire_shutdown(void);
-void artifactuary_mode_joe_fire_process(int64_t total_time_ns, int64_t frame_time_ns);
-
 void artifactuary_mode_vlad_fire_0_init(void);
-void artifactuary_mode_vlad_fire_0_shutdown(void);
-void artifactuary_mode_vlad_fire_0_process(int64_t total_time_ns, int64_t frame_time_ns);
+void artifactuary_mode_vlad_plasma_0_init(void);
 
-void artifactuary_mode_vlad_plasma_0_process(int64_t total_time_ns, int64_t frame_time_ns);
+void artifactuary_mode_blank_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+void artifactuary_mode_frame_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
 
 
 void artifactuary_init(void)
@@ -308,51 +303,43 @@ void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
     artifactuary_ui_process();
     
     if(artifactuary_next_mode != artifactuary_mode) {
-        switch(artifactuary_mode) {
-        case MODE_JOE_FIRE:
-            artifactuary_mode_joe_fire_shutdown();
-            break;
-        case MODE_VLAD_FIRE_0:
-            artifactuary_mode_vlad_fire_0_shutdown();
-            break;
-        default:
-            break;
+        for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+            if(artifactuary_effects[i] != NULL) {
+                effect_destroy(artifactuary_effects[i]);
+                artifactuary_effects[i] = NULL;
+            }
         }
         artifactuary_mode = artifactuary_next_mode;
         switch(artifactuary_mode) {
+        case MODE_BLANK:
+            artifactuary_mode_blank_init();
+            break;
+        case MODE_FRAME:
+            artifactuary_mode_frame_init();
+            break;
         case MODE_JOE_FIRE:
             artifactuary_mode_joe_fire_init();
             break;
         case MODE_VLAD_FIRE_0:
             artifactuary_mode_vlad_fire_0_init();
             break;
+        case MODE_VLAD_PLASMA_0:
+            artifactuary_mode_vlad_fire_0_init();
+            break;
+        case MODE_NONE:
         default:
             break;
         }
     }
     
-    switch(artifactuary_mode) {
-    default:
-    case MODE_NONE:
-        // fill the array black
-        memset(artifactuary_array_data, 0, sizeof artifactuary_array_data);
-        break;
-    case MODE_BLANK:
-        // fill the array white
-        memset(artifactuary_array_data, 255, sizeof artifactuary_array_data);
-        break;
-    case MODE_FRAME:
-        artifactuary_mode_frame_process(total_time_ns, frame_time_ns);
-        break;
-    case MODE_JOE_FIRE:
-        artifactuary_mode_joe_fire_process(total_time_ns, frame_time_ns);
-        break;
-    case MODE_VLAD_FIRE_0:
-        artifactuary_mode_vlad_fire_0_process(total_time_ns, frame_time_ns);
-        break;
-    case MODE_VLAD_PLASMA_0:
-        artifactuary_mode_vlad_plasma_0_process(total_time_ns, frame_time_ns);
-        break;
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        if(artifactuary_effects[i] != NULL) {
+            effect_process(artifactuary_effects[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
+        }
+        else {
+            // clear to black
+            memset(artifactuary_arrays[i].data, 0, artifactuary_arrays[i].width * artifactuary_arrays[i].height * sizeof (rgba_t));
+        }
     }
     
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &process_end_time);
@@ -441,38 +428,38 @@ void artifactuary_ui_draw(void)
 }
 
 
-void artifactuary_mode_frame_process(int64_t total_time_ns, int64_t frame_time_ns)
+void artifactuary_mode_blank_init(void)
 {
-    for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
-        int32_t width = artifactuary_arrays[k].width;
-        int32_t height = artifactuary_arrays[k].height;
-        
-        // resistor color sequence
-        rgba_t array_colors[] = {
-            {{  0,   0,   0, 255}}, // black
-            {{127,  63,   0, 255}}, // brown
-            {{255,   0,   0, 255}}, // red
-            {{255, 127,   0, 255}}, // orange
-            {{191, 191,   0, 255}}, // yellow
-            {{  0, 255,   0, 255}}, // green
-            {{  0,   0, 255, 255}}, // blue
-            {{127,   0, 127, 255}}, // purple
-            {{ 63,  63,  63, 255}}, // grey
-            {{255, 255, 255, 255}}, // white
-        };
-        // fill array with the appropriate color
-        for(int32_t i = 0; i < width * height; ++i) {
-            artifactuary_arrays[k].data[i] = array_colors[k];
-        }
-        // draw white frame around the array
-        for(int32_t j = 0; j < height; ++j) {
-            artifactuary_arrays[k].data[j * width + 0].rgba = 0xFFFFFFFF;
-            artifactuary_arrays[k].data[j * width + width - 1].rgba = 0xFFFFFFFF;
-        }
-        for(int32_t i = 0; i < artifactuary_arrays[k].width; ++i) {
-            artifactuary_arrays[k].data[0 * width + i].rgba = 0xFFFFFFFF;
-            artifactuary_arrays[k].data[(height - 1) * width + i].rgba = 0xFFFFFFFF;
-        }
+    // initialize all the state structures used by the panel image generation
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        artifactuary_effects[i] = effect_alloc();
+        artifactuary_effects[i]->process = &artifactuary_mode_blank_effect_process;
+    }
+}
+
+void artifactuary_mode_frame_init(void)
+{
+    // resistor color sequence
+    rgba_t array_colors[] = {
+        {{  0,   0,   0, 255}}, // black
+        {{127,  63,   0, 255}}, // brown
+        {{255,   0,   0, 255}}, // red
+        {{255, 127,   0, 255}}, // orange
+        {{191, 191,   0, 255}}, // yellow
+        {{  0, 255,   0, 255}}, // green
+        {{  0,   0, 255, 255}}, // blue
+        {{127,   0, 127, 255}}, // purple
+        {{ 95,  95,  95, 255}}, // grey
+        {{255, 255, 255, 255}}, // white
+    };
+    
+    assert(ARTIFACTUARY_NUM_ARRAYS < 10);
+    
+    // initialize all the state structures used by the panel image generation
+    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+        artifactuary_effects[i] = effect_alloc();
+        artifactuary_effects[i]->process = &artifactuary_mode_frame_effect_process;
+        artifactuary_effects[i]->void_state = (void*)array_colors[i].rgba;
     }
 }
 
@@ -481,25 +468,7 @@ void artifactuary_mode_joe_fire_init(void)
 {
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_init(&artifactuary_joe_fire_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
-    }
-}
-
-
-void artifactuary_mode_joe_fire_shutdown(void)
-{
-    // initialize all the state structures used by the panel image generation
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_shutdown(&artifactuary_joe_fire_state[i]);
-    }
-}
-
-
-void artifactuary_mode_joe_fire_process(int64_t total_time_ns, int64_t frame_time_ns)
-{
-    // process fire backgrounds for all panels
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_joe_fire_process(&artifactuary_joe_fire_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
+        artifactuary_effects[i] = effect_joe_fire_create(artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
 }
 
@@ -508,34 +477,48 @@ void artifactuary_mode_vlad_fire_0_init(void)
 {
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_vlad_fire_0_init(&artifactuary_vlad_fire_0_state[i], artifactuary_arrays[i].width, artifactuary_arrays[i].height);
+        artifactuary_effects[i] = effect_vlad_fire_0_create(artifactuary_arrays[i].width, artifactuary_arrays[i].height);
     }
 }
 
 
-void artifactuary_mode_vlad_fire_0_shutdown(void)
+void artifactuary_mode_vlad_plasma_0_init(void)
 {
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_vlad_fire_0_shutdown(&artifactuary_vlad_fire_0_state[i]);
+        artifactuary_effects[i] = effect_vlad_plasma_0_create();
     }
 }
 
 
-void artifactuary_mode_vlad_fire_0_process(int64_t total_time_ns, int64_t frame_time_ns)
+void artifactuary_mode_blank_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
 {
-    // process fire backgrounds for all panels
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_vlad_fire_0_process(&artifactuary_vlad_fire_0_state[i], &artifactuary_arrays[i], total_time_ns, frame_time_ns);
-    }
+    // fill the array white
+    memset(target_array->data, 255, target_array->width * target_array->height * sizeof (rgba_t));
 }
 
 
-void artifactuary_mode_vlad_plasma_0_process(int64_t total_time_ns, int64_t frame_time_ns)
+void artifactuary_mode_frame_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
 {
-    // process fire backgrounds for all panels
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        effect_vlad_plasma_0_process(NULL, &artifactuary_arrays[i], total_time_ns + i * 10000000000LL, frame_time_ns);
+    int32_t width = target_array->width;
+    int32_t height = target_array->height;
+    rgba_t* data = target_array->data;
+    rgba_t color;
+    
+    color.rgba = (uint32_t)void_state;
+    
+    // fill array with the appropriate color
+    for(int32_t i = 0; i < width * height; ++i) {
+        data[i] = color;
+    }
+    // draw white frame around the array
+    for(int32_t j = 0; j < height; ++j) {
+        data[j * width + 0].rgba = 0xFFFFFFFF;
+        data[j * width + width - 1].rgba = 0xFFFFFFFF;
+    }
+    for(int32_t i = 0; i < width; ++i) {
+        data[0 * width + i].rgba = 0xFFFFFFFF;
+        data[(height - 1) * width + i].rgba = 0xFFFFFFFF;
     }
 }
 

@@ -3,11 +3,25 @@
 #include <math.h>
 
 
+void effect_vlad_plasma_0_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+
+
 static rgba_t color_wheel(int32_t wheel_pos);
+
 
 static inline double distancef(float a, float b, float c, float d)
 {
     return sqrtf((a - c) * (a - c) + (b - d) * (b - d));
+}
+
+
+effect_t* effect_vlad_plasma_0_create(void)
+{
+    effect_t* effect = effect_alloc();
+    
+    effect->process = &effect_vlad_plasma_0_process;
+    
+    return effect;
 }
 
 

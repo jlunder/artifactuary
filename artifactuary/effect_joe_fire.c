@@ -1,24 +1,48 @@
 #include "effect_joe_fire.h"
 
 
+typedef struct effect_joe_fire_state
+{
+    int32_t width;
+    int32_t height;
+    int32_t jitter;
+    uint8_t* intensity;
+} effect_joe_fire_state_t;
+
+
+void effect_joe_fire_destroy(void* void_state);
+void effect_joe_fire_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+
+
 rgba_t effect_joe_fire_palette[256];
 
 
-void effect_joe_fire_init(effect_joe_fire_state_t* state, int32_t width, int32_t height)
+effect_t* effect_joe_fire_create(int32_t width, int32_t height)
 {
+    effect_t* effect = effect_alloc();
+    effect_joe_fire_state_t* state = (effect_joe_fire_state_t*)malloc(sizeof (effect_joe_fire_state_t));
+    
+    effect->void_state = state;
+    effect->process = &effect_joe_fire_process;
+    effect->destroy = &effect_joe_fire_destroy;
+    
     state->width = width;
     state->height = height;
     // intensity buffer is actually oversize by 1 row
     state->intensity = malloc(sizeof (uint8_t) * width * (height + 1));
     memset(state->intensity, 0, sizeof (uint8_t) * width * (height + 1));
     state->jitter = 0;
+    
+    return effect;
 }
 
 
-void effect_joe_fire_shutdown(effect_joe_fire_state_t* state)
+void effect_joe_fire_destroy(void* void_state)
 {
+    effect_joe_fire_state_t* state = (effect_joe_fire_state_t*)void_state;
+    
     free(state->intensity);
-    state->intensity = NULL;
+    free(state);
 }
 
 

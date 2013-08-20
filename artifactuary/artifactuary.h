@@ -49,9 +49,7 @@
 
 
 #include "array.h"
-
-
-typedef void (*effect_process_function_t)(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+#include "effect.h"
 
 
 // the framebuffers for the various sculpture panels
