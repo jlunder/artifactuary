@@ -6,8 +6,8 @@
 
 typedef struct effect_timer_select_state
 {
-    int32_t advance_ms;
-    int32_t crossfade_ms;
+    int64_t advance_ns;
+    int64_t crossfade_ns;
     bool shuffle;
     
     int64_t last_transition_time_ns;
@@ -35,8 +35,8 @@ effect_t* effect_timer_select_create()
     effect->process = &effect_timer_select_process;
     effect->destroy = &effect_timer_select_destroy;
     
-    state->advance_ms = 10000;
-    state->crossfade_ms = 1000;
+    state->advance_ns = 10000000000LL;
+    state->crossfade_ns = 1000000000LL;
     state->shuffle = true;
     
     state->last_transition_time_ns = -1;
@@ -69,8 +69,8 @@ void effect_timer_select_process(void* void_state, array_t* target_array, int64_
         state->last_transition_time_ns = total_time_ns;
     }
     
-    if(state->advance_ms > 0) {
-        if(state->last_transition_time_ns + (int64_t)state->advance_ms * 1000000 <= total_time_ns) {
+    if(state->advance_ns > 0) {
+        if(state->last_transition_time_ns + state->advance_ns <= total_time_ns) {
             if(state->next_subeffect >= 0) {
                 // not yet finished last transition? hmm
                 state->cur_subeffect = state->next_subeffect;
@@ -83,15 +83,15 @@ void effect_timer_select_process(void* void_state, array_t* target_array, int64_
                 state->next_subeffect = (state->next_subeffect + 1) % state->num_subeffects;
             }
         
-            state->last_transition_time_ns += (int64_t)state->advance_ms * 1000000;
-            if(state->last_transition_time_ns + (int64_t)state->advance_ms * 1000000 <= total_time_ns) {
+            state->last_transition_time_ns += state->advance_ns;
+            if(state->last_transition_time_ns + state->advance_ns <= total_time_ns) {
                 state->last_transition_time_ns = total_time_ns;
             }
         }
     }
     
     if(state->next_subeffect >= 0) {
-        if(state->last_transition_time_ns + (int64_t)state->crossfade_ms * 1000000 <= total_time_ns) {
+        if(state->last_transition_time_ns + state->crossfade_ns <= total_time_ns) {
             state->cur_subeffect = state->next_subeffect;
             state->next_subeffect = -1;
         }
@@ -102,11 +102,20 @@ void effect_timer_select_process(void* void_state, array_t* target_array, int64_
         int32_t height = target_array->height;
         rgba_t* temp_array_data = (rgba_t*)alloca(width * height * sizeof (rgba_t));
         array_t temp_array = {.width = width, .height = height, .data = temp_array_data};
-        uint8_t crossfade = ((total_time_ns - state->last_transition_time_ns) * 256) / (int64_t)state->crossfade_ms * 1000000;
+        uint8_t crossfade = ((total_time_ns - state->last_transition_time_ns) * 256) / state->crossfade_ns;
         
         effect_process(state->subeffects[state->cur_subeffect].effect, target_array, total_time_ns, frame_time_ns);
         effect_process(state->subeffects[state->next_subeffect].effect, &temp_array, total_time_ns, frame_time_ns);
         array_composite_explicit_alpha(target_array, &temp_array, crossfade);
+        
+        /*
+        for(int i = 0; i < (width * crossfade) / 256; ++i) {
+            target_array->data[i].rgba = 0xFFFFFFFF;
+        }
+        */
+    }
+    else {
+        effect_process(state->subeffects[state->cur_subeffect].effect, target_array, total_time_ns, frame_time_ns);
     }
 }
 
@@ -206,7 +215,7 @@ int32_t effect_timer_select_get_advance_ms(effect_t* effect)
     
     assert(effect->process == &effect_timer_select_process);
     
-    return state->advance_ms;
+    return state->advance_ns / 1000000LL;
 }
 
 
@@ -217,7 +226,7 @@ void effect_timer_select_set_advance_ms(effect_t* effect, int32_t advance_ms)
     assert(effect->process == &effect_timer_select_process);
     
     state->last_transition_time_ns = -1;
-    state->advance_ms = advance_ms;
+    state->advance_ns = (int64_t)advance_ms * 1000000LL;
 }
 
 
@@ -227,7 +236,7 @@ int32_t effect_timer_select_get_crossfade_ms(effect_t* effect)
     
     assert(effect->process == &effect_timer_select_process);
     
-    return state->crossfade_ms;
+    return state->crossfade_ns / 1000000LL;
 }
 
 
@@ -237,7 +246,7 @@ void effect_timer_select_set_crossfade_ms(effect_t* effect, int32_t crossfade_ms
     
     assert(effect->process == &effect_timer_select_process);
     
-    state->crossfade_ms = crossfade_ms;
+    state->crossfade_ns = (int64_t)crossfade_ms * 1000000LL;
 }
 
 

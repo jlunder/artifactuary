@@ -92,7 +92,7 @@ void array_composite_explicit_alpha(array_t* target, array_t* source, uint8_t al
         target->data[i].c.r = one_minus_alpha_table[target->data[i].c.r] + alpha_table[source->data[i].c.r];
         target->data[i].c.g = one_minus_alpha_table[target->data[i].c.g] + alpha_table[source->data[i].c.g];
         target->data[i].c.b = one_minus_alpha_table[target->data[i].c.b] + alpha_table[source->data[i].c.b];
-        target->data[i].c.a = 255;
+        target->data[i].c.a = one_minus_alpha_table[target->data[i].c.a] + alpha_table[source->data[i].c.a];
     }
 }
 
@@ -113,6 +113,8 @@ void array_composite_add(array_t* target, array_t* source)
         target->data[i].c.g = sum > 255 ? 255 : (uint8_t)sum;
         sum = (int32_t)target->data[i].c.b + source->data[i].c.b;
         target->data[i].c.b = sum > 255 ? 255 : (uint8_t)sum;
+        sum = (int32_t)target->data[i].c.a + source->data[i].c.a;
+        target->data[i].c.a = sum > 255 ? 255 : (uint8_t)sum;
     }
 }
 

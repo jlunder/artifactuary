@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "effect_timer_select.h"
+
 #include "effect_joe_fire.h"
 #include "effect_vlad_fire_0.h"
 #include "effect_vlad_plasma_0.h"
@@ -12,12 +14,9 @@
 
 typedef enum {
     MODE_NONE,
-    MODE_BLANK,
+    MODE_POWER_TEST,
     MODE_FRAME,
-    MODE_JOE_FIRE,
-    MODE_VLAD_FIRE_0,
-    MODE_VLAD_PLASMA_0,
-    MODE_COUNT,
+    MODE_PLAY,
 } artifactuary_mode_t;
 
 
@@ -53,7 +52,9 @@ int64_t artifactuary_last_process_nsec = 0;
 int64_t artifactuary_last_frame_time_nsec = 0;
 
 artifactuary_mode_t artifactuary_mode = MODE_NONE;
-artifactuary_mode_t artifactuary_next_mode = MODE_VLAD_FIRE_0;
+artifactuary_mode_t artifactuary_next_mode = MODE_PLAY;
+
+artifactuary_mode_t artifactuary_ui_selected_array = 0;
 
 effect_t* artifactuary_effects[ARTIFACTUARY_NUM_ARRAYS];
 
@@ -64,13 +65,11 @@ void artifactuary_ui_init(void);
 void artifactuary_ui_process();
 void artifactuary_ui_draw();
 
-void artifactuary_mode_blank_init(void);
+void artifactuary_mode_power_test_init(void);
 void artifactuary_mode_frame_init(void);
-void artifactuary_mode_joe_fire_init(void);
-void artifactuary_mode_vlad_fire_0_init(void);
-void artifactuary_mode_vlad_plasma_0_init(void);
+void artifactuary_mode_play_init(void);
 
-void artifactuary_mode_blank_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+void artifactuary_mode_power_test_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
 void artifactuary_mode_frame_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
 
 
@@ -311,20 +310,14 @@ void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
         }
         artifactuary_mode = artifactuary_next_mode;
         switch(artifactuary_mode) {
-        case MODE_BLANK:
-            artifactuary_mode_blank_init();
+        case MODE_POWER_TEST:
+            artifactuary_mode_power_test_init();
             break;
         case MODE_FRAME:
             artifactuary_mode_frame_init();
             break;
-        case MODE_JOE_FIRE:
-            artifactuary_mode_joe_fire_init();
-            break;
-        case MODE_VLAD_FIRE_0:
-            artifactuary_mode_vlad_fire_0_init();
-            break;
-        case MODE_VLAD_PLASMA_0:
-            artifactuary_mode_vlad_plasma_0_init();
+        case MODE_PLAY:
+            artifactuary_mode_play_init();
             break;
         case MODE_NONE:
         default:
@@ -364,17 +357,34 @@ void artifactuary_ui_process(void)
             case 'q':
                 exit(0);
                 break;
-            case KEY_LEFT:
-                artifactuary_next_mode -= 1;
-                if(artifactuary_next_mode <= MODE_NONE) {
-                    artifactuary_next_mode = MODE_COUNT - 1;
+            case 'W':
+                artifactuary_next_mode = MODE_POWER_TEST;
+                ui_modified = true;
+                break;
+            case 'F':
+                artifactuary_next_mode = MODE_FRAME;
+                ui_modified = true;
+                break;
+            case 'p':
+            case 'P':
+                artifactuary_next_mode = MODE_PLAY;
+                ui_modified = true;
+                break;
+            case KEY_UP:
+                artifactuary_ui_selected_array = (artifactuary_ui_selected_array + ARTIFACTUARY_NUM_ARRAYS - 1) % ARTIFACTUARY_NUM_ARRAYS;
+                ui_modified = true;
+                break;
+            case KEY_DOWN:
+                artifactuary_ui_selected_array = (artifactuary_ui_selected_array + ARTIFACTUARY_NUM_ARRAYS - 1) % ARTIFACTUARY_NUM_ARRAYS;
+                ui_modified = true;
+                break;
+            case '[':
+                if(artifactuary_mode == MODE_PLAY) {
+                    //effect_timer_select_(artifactuary_array_effects[artifactuary_ui_selected_array]);
+                    ui_modified = true;
                 }
                 break;
-            case KEY_RIGHT:
-                artifactuary_next_mode += 1;
-                if(artifactuary_next_mode >= MODE_COUNT) {
-                    artifactuary_next_mode = MODE_NONE + 1;
-                }
+            case ']':
                 break;
             }
             ch = getch();
@@ -408,12 +418,9 @@ void artifactuary_ui_draw(void)
     char const* mode_name;
     
     switch(artifactuary_next_mode) {
-    case MODE_NONE: mode_name = "none (?)"; break;
-    case MODE_BLANK: mode_name = "blank white (debug)"; break;
+    case MODE_POWER_TEST: mode_name = "blank white - power test (debug)"; break;
     case MODE_FRAME: mode_name = "rainbow frames (debug)"; break;
-    case MODE_JOE_FIRE: mode_name = "fire (joe)"; break;
-    case MODE_VLAD_FIRE_0: mode_name = "fire 0 (vlad)"; break;
-    case MODE_VLAD_PLASMA_0: mode_name = "plasma 0 (vlad)"; break;
+    case MODE_PLAY: mode_name = "playing"; break;
     default: mode_name = "!UNKNOWN!"; break;
     }
     
@@ -428,12 +435,12 @@ void artifactuary_ui_draw(void)
 }
 
 
-void artifactuary_mode_blank_init(void)
+void artifactuary_mode_power_test_init(void)
 {
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
         artifactuary_effects[i] = effect_alloc();
-        artifactuary_effects[i]->process = &artifactuary_mode_blank_effect_process;
+        artifactuary_effects[i]->process = &artifactuary_mode_power_test_effect_process;
     }
 }
 
@@ -464,34 +471,22 @@ void artifactuary_mode_frame_init(void)
 }
 
 
-void artifactuary_mode_joe_fire_init(void)
+void artifactuary_mode_play_init(void)
 {
     // initialize all the state structures used by the panel image generation
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        artifactuary_effects[i] = effect_joe_fire_create(artifactuary_arrays[i].width, artifactuary_arrays[i].height);
+        int32_t width = artifactuary_arrays[i].width;
+        int32_t height = artifactuary_arrays[i].height;
+        
+        artifactuary_effects[i] = effect_timer_select_create();
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_fire_0_create(width, height), "Vlad fire 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_plasma_0_create(), "Vlad plasma 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_joe_fire_create(width, height), "Joe fire");
     }
 }
 
 
-void artifactuary_mode_vlad_fire_0_init(void)
-{
-    // initialize all the state structures used by the panel image generation
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        artifactuary_effects[i] = effect_vlad_fire_0_create(artifactuary_arrays[i].width, artifactuary_arrays[i].height);
-    }
-}
-
-
-void artifactuary_mode_vlad_plasma_0_init(void)
-{
-    // initialize all the state structures used by the panel image generation
-    for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
-        artifactuary_effects[i] = effect_vlad_plasma_0_create();
-    }
-}
-
-
-void artifactuary_mode_blank_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
+void artifactuary_mode_power_test_effect_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns)
 {
     // fill the array white
     memset(target_array->data, 255, target_array->width * target_array->height * sizeof (rgba_t));
