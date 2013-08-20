@@ -5,13 +5,23 @@
 #include "artifactuary.h"
 
 
-typedef struct effect_timer_select_state
-{
-} effect_timer_select_state_t;
+effect_t* effect_timer_select_create();
 
+bool effect_timer_select_get_shuffle(effect_t* effect);
+void effect_timer_select_set_shuffle(effect_t* effect, bool shuffle);
 
-void effect_joe_fire_init(effect_timer_select_state_t* state, int32_t width, int32_t height);
-void effect_joe_fire_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
+int32_t effect_timer_select_add_subeffect(effect_t* effect, effect_t* subeffect, char const* subeffect_name);
+char const* effect_timer_select_get_subeffect_name(effect_t* effect, int32_t subeffect_id);
+int32_t effect_timer_select_get_current_subeffect(effect_t* effect);
+
+void effect_timer_select_next_subeffect(effect_t* effect);
+void effect_timer_select_previous_subeffect(effect_t* effect);
+void effect_timer_select_goto_subeffect(effect_t* effect, int32_t subeffect_id);
+
+int32_t effect_timer_select_get_advance_ms(effect_t* effect);
+void effect_timer_select_set_advance_ms(effect_t* effect, int32_t advance_ms); // 0 == stop
+int32_t effect_timer_select_get_crossfade_ms(effect_t* effect);
+void effect_timer_select_set_crossfade_ms(effect_t* effect, int32_t crossfade_ms);
 
 
 #endif

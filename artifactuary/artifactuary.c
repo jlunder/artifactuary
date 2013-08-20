@@ -324,7 +324,7 @@ void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
             artifactuary_mode_vlad_fire_0_init();
             break;
         case MODE_VLAD_PLASMA_0:
-            artifactuary_mode_vlad_fire_0_init();
+            artifactuary_mode_vlad_plasma_0_init();
             break;
         case MODE_NONE:
         default:
