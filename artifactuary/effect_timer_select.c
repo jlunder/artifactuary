@@ -170,7 +170,12 @@ int32_t effect_timer_select_get_current_subeffect(effect_t* effect)
     
     assert(effect->process == &effect_timer_select_process);
     
-    return state->cur_subeffect;
+    if(state->next_subeffect >= 0) {
+        return state->next_subeffect;
+    }
+    else {
+        return state->cur_subeffect;
+    }
 }
 
 
@@ -180,7 +185,7 @@ void effect_timer_select_next_subeffect(effect_t* effect)
     
     assert(effect->process == &effect_timer_select_process);
     
-    effect_timer_select_goto_subeffect(effect, (state->cur_subeffect + 1) % state->num_subeffects);
+    effect_timer_select_goto_subeffect(effect, (effect_timer_select_get_current_subeffect(effect) + 1) % state->num_subeffects);
 }
 
 
@@ -190,7 +195,7 @@ void effect_timer_select_previous_subeffect(effect_t* effect)
     
     assert(effect->process == &effect_timer_select_process);
     
-    effect_timer_select_goto_subeffect(effect, (state->cur_subeffect + state->num_subeffects - 1) % state->num_subeffects);
+    effect_timer_select_goto_subeffect(effect, (effect_timer_select_get_current_subeffect(effect) + state->num_subeffects - 1) % state->num_subeffects);
 }
 
 

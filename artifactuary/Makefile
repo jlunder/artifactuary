@@ -124,6 +124,7 @@ ARTIFACTUARY_SRC= \
 	array.c \
 	effect.c \
 	main.c \
+	effect_blank.c \
 	effect_joe_fire.c \
 	effect_joe_text_scroll.c \
 	effect_timer_select.c \

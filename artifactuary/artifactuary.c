@@ -323,6 +323,7 @@ void artifactuary_process(int64_t total_time_ns, int64_t frame_time_ns)
         default:
             break;
         }
+        artifactuary_ui_draw();
     }
     
     for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
@@ -349,6 +350,7 @@ void artifactuary_ui_process(void)
 #ifdef USE_NCURSES
     int ch;
     bool ui_modified = false;
+    effect_t* selected_effect = artifactuary_effects[artifactuary_ui_selected_array];
     
     ch = getch();
     if(ch != ERR) {
@@ -359,50 +361,86 @@ void artifactuary_ui_process(void)
                 break;
             case 'W':
                 artifactuary_next_mode = MODE_POWER_TEST;
-                ui_modified = true;
                 break;
             case 'F':
                 artifactuary_next_mode = MODE_FRAME;
-                ui_modified = true;
                 break;
             case 'p':
             case 'P':
                 artifactuary_next_mode = MODE_PLAY;
-                ui_modified = true;
                 break;
-            case KEY_UP:
-                artifactuary_ui_selected_array = (artifactuary_ui_selected_array + ARTIFACTUARY_NUM_ARRAYS - 1) % ARTIFACTUARY_NUM_ARRAYS;
-                ui_modified = true;
-                break;
-            case KEY_DOWN:
-                artifactuary_ui_selected_array = (artifactuary_ui_selected_array + ARTIFACTUARY_NUM_ARRAYS - 1) % ARTIFACTUARY_NUM_ARRAYS;
-                ui_modified = true;
-                break;
-            case '[':
+            default:
                 if(artifactuary_mode == MODE_PLAY) {
-                    //effect_timer_select_(artifactuary_array_effects[artifactuary_ui_selected_array]);
-                    ui_modified = true;
+                    switch(ch) {
+                    case KEY_UP:
+                        artifactuary_ui_selected_array = (artifactuary_ui_selected_array + ARTIFACTUARY_NUM_ARRAYS - 1) % ARTIFACTUARY_NUM_ARRAYS;
+                        break;
+                    case KEY_DOWN:
+                        artifactuary_ui_selected_array = (artifactuary_ui_selected_array + 1) % ARTIFACTUARY_NUM_ARRAYS;
+                        break;
+                    case KEY_LEFT:
+                        effect_timer_select_previous_subeffect(selected_effect);
+                        break;
+                    case KEY_RIGHT:
+                        effect_timer_select_next_subeffect(selected_effect);
+                        break;
+                    case ':':
+                        effect_timer_select_set_advance_ms(selected_effect, 0);
+                        break;
+                    case ';':
+                        {
+                            int32_t advance_ms = effect_timer_select_get_advance_ms(selected_effect);
+                            if(advance_ms > 1000) {
+                                advance_ms -= 1000;
+                            }
+                            else {
+                                advance_ms = 0;
+                            }
+                            effect_timer_select_set_advance_ms(selected_effect, advance_ms);
+                        }
+                        break;
+                    case '\'':
+                        {
+                            int32_t advance_ms = effect_timer_select_get_advance_ms(selected_effect);
+                            advance_ms += 1000;
+                            effect_timer_select_set_advance_ms(selected_effect, advance_ms);
+                        }
+                        break;
+                    case '<':
+                        effect_timer_select_set_crossfade_ms(selected_effect, 0);
+                        break;
+                    case ',':
+                        {
+                            int32_t crossfade_ms = effect_timer_select_get_crossfade_ms(selected_effect);
+                            if(crossfade_ms > 100) {
+                                crossfade_ms -= 100;
+                            }
+                            else {
+                                crossfade_ms = 0;
+                            }
+                            effect_timer_select_set_crossfade_ms(selected_effect, crossfade_ms);
+                        }
+                        break;
+                    case '.':
+                        {
+                            int32_t crossfade_ms = effect_timer_select_get_crossfade_ms(selected_effect);
+                            crossfade_ms += 100;
+                            effect_timer_select_set_crossfade_ms(selected_effect, crossfade_ms);
+                        }
+                        break;
+                    }
                 }
-                break;
-            case ']':
-                break;
             }
             ch = getch();
         }
     }
     
-    if(artifactuary_next_mode != artifactuary_mode) {
-        ui_modified = true;
-    }
+    artifactuary_ui_draw();
     
-    if(ui_modified) {
-        artifactuary_ui_draw();
-    }
-    
-    move(5, 0);
     if(artifactuary_last_process_nsec > 5000000 || artifactuary_last_frame_time_nsec > 34000000) {
         attron(A_BOLD);
     }
+    move(7, 0);
     printw("frame time: %7.3fms/%7.3fms", (double)artifactuary_last_frame_time_nsec * 1.0e-6, (double)artifactuary_last_process_nsec * 1.0e-6);
     attroff(A_BOLD);
     refresh();
@@ -417,7 +455,7 @@ void artifactuary_ui_draw(void)
 #ifdef USE_NCURSES
     char const* mode_name;
     
-    switch(artifactuary_next_mode) {
+    switch(artifactuary_mode) {
     case MODE_POWER_TEST: mode_name = "blank white - power test (debug)"; break;
     case MODE_FRAME: mode_name = "rainbow frames (debug)"; break;
     case MODE_PLAY: mode_name = "playing"; break;
@@ -427,10 +465,35 @@ void artifactuary_ui_draw(void)
     erase();
     
     move(0, 0);
-    printw("   ---ARTIFACTUARY---\n");
-    printw("\n");
-    printw("current mode: %s\n", mode_name);
-    printw("\n");
+    printw(
+        "---ARTIFACTUARY---\n"
+        "\n"
+        "Pp play mode -- F frame test mode\n"
+        "W - power test mode (all white, USE WITH CAUTION)\n"
+        "\n"
+        "current mode: %s\n", mode_name);
+    if(artifactuary_mode == MODE_PLAY) {
+        printw(
+            "up/down array -- left/right effect\n"
+            ";' advance time -- ,. crossfade time\n"
+            "\n");
+        for(int32_t i = 0; i < ARTIFACTUARY_NUM_ARRAYS; ++i) {
+            int32_t id = effect_timer_select_get_current_subeffect(artifactuary_effects[i]);
+            effect_t* effect = artifactuary_effects[i];
+            
+            if(i == artifactuary_ui_selected_array) {
+                attron(A_BOLD);
+            }
+            printw("ARRAY %d: %s (advance %gs%s%s, crossfade %gs)\n",
+                i,
+                effect_timer_select_get_subeffect_name(effect, id),
+                effect_timer_select_get_advance_ms(effect) / 1000.0f,
+                effect_timer_select_get_advance_ms(effect) == 0 ? " [stop]" : "",
+                effect_timer_select_get_shuffle(effect) ? " [shuffle]" : "",
+                effect_timer_select_get_crossfade_ms(effect) / 1000.0f);
+            attroff(A_BOLD);
+        }
+    }
 #endif
 }
 
@@ -479,6 +542,9 @@ void artifactuary_mode_play_init(void)
         int32_t height = artifactuary_arrays[i].height;
         
         artifactuary_effects[i] = effect_timer_select_create();
+        effect_timer_select_set_advance_ms(artifactuary_effects[i], 30000 + 10000 * i);
+        effect_timer_select_set_crossfade_ms(artifactuary_effects[i], 500);
+        effect_timer_select_set_shuffle(artifactuary_effects[i], true);
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_fire_0_create(width, height), "Vlad fire 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_plasma_0_create(), "Vlad plasma 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_joe_fire_create(width, height), "Joe fire");

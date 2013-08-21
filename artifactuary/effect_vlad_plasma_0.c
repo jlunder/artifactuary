@@ -19,6 +19,8 @@ effect_t* effect_vlad_plasma_0_create(void)
 {
     effect_t* effect = effect_alloc();
     
+    // hack: pack an int randomizer into the state pointer
+    effect->void_state = (void*)rand();
     effect->process = &effect_vlad_plasma_0_process;
     
     return effect;
@@ -30,7 +32,7 @@ void effect_vlad_plasma_0_process(void* void_state, array_t* target_array, int64
     int32_t width = target_array->width;
     int32_t height = target_array->height;
     rgba_t* data = target_array->data;
-    float time = (float)(total_time_ns % 100000000000LL) / 1.0e9f;
+    float time = (float)((total_time_ns + (int64_t)void_state * 1000000LL) % 100000000000LL) / 1.0e9f;
     
     for(int32_t y = 0; y < height; y++)
     {
