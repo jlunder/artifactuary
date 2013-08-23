@@ -27,18 +27,18 @@ typedef enum {
 
 // the data pointers are set up in artifactuary_init
 array_t artifactuary_arrays[ARTIFACTUARY_NUM_ARRAYS] = {
-    {
-        .width = ARTIFACTUARY_BACKDROP_WIDTH,
-        .height = ARTIFACTUARY_BACKDROP_HEIGHT,
-    },
+//    {
+//        .width = ARTIFACTUARY_BACKDROP_WIDTH,
+//        .height = ARTIFACTUARY_BACKDROP_HEIGHT,
+//    },
     {
         .width = ARTIFACTUARY_BUILDING_B_WIDTH,
         .height = ARTIFACTUARY_BUILDING_B_HEIGHT,
     },
-    {
-        .width = ARTIFACTUARY_BUILDING_B2_WIDTH,
-        .height = ARTIFACTUARY_BUILDING_B2_HEIGHT,
-    },
+//    {
+//        .width = ARTIFACTUARY_BUILDING_B2_WIDTH,
+//        .height = ARTIFACTUARY_BUILDING_B2_HEIGHT,
+//    },
     {
         .width = ARTIFACTUARY_BUILDING_C_WIDTH,
         .height = ARTIFACTUARY_BUILDING_C_HEIGHT,
