@@ -130,6 +130,12 @@ ARTIFACTUARY_SRC= \
 	effect_timer_select.c \
 	effect_vlad_fire_0.c \
 	effect_vlad_plasma_0.c \
+	effect_vlad_sinewave_0.c\
+	effect_vlad_sparkler_0.c\
+	effect_vlad_acid_trap_0.c\
+	effect_vlad_rainbow_slider_0.c\
+	effect_vlad_rainbow_ladder_0.c\
+	effect_vlad_mandelbrot_0.c\
 	gles2_harness.c \
 	spi_harness.c
 

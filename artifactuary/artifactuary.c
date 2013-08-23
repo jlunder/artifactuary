@@ -10,7 +10,12 @@
 #include "effect_joe_fire.h"
 #include "effect_vlad_fire_0.h"
 #include "effect_vlad_plasma_0.h"
-
+#include "effect_vlad_sinewave_0.h"
+#include "effect_vlad_mandelbrot_0.h"
+#include "effect_vlad_acid_trap_0.h"
+#include "effect_vlad_rainbow_slider_0.h"
+#include "effect_vlad_rainbow_ladder_0.h"
+#include "effect_vlad_sparkler_0.h"
 
 typedef enum {
     MODE_NONE,
@@ -548,6 +553,12 @@ void artifactuary_mode_play_init(void)
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_fire_0_create(width, height), "Vlad fire 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_plasma_0_create(), "Vlad plasma 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_joe_fire_create(width, height), "Joe fire");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sinewave_0_create(width, height), "Sinewave 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sparkler_0_create(width, height), "Sparkler 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_slider_0_create(width, height), "Rainbow Slider 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_ladder_0_create(width, height), "Rainbow Ladder 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_acid_trap_0_create(width, height), "Acid Trap 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_mandelbrot_0_create(width, height), "Mandelbrot 0");
     }
 }
 
