@@ -5,7 +5,7 @@
 #include "artifactuary.h"
 
 
-effect_t* effect_joe_text_scroll_create(int32_t width, int32_t height);
+effect_t* effect_joe_text_scroll_create(int32_t width, int32_t height, effect_t* background_effect);
 
 
 #endif
