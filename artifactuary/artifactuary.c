@@ -8,6 +8,7 @@
 #include "effect_timer_select.h"
 
 #include "effect_joe_fire.h"
+#include "effect_joe_text_scroll.h"
 #include "effect_vlad_fire_0.h"
 #include "effect_vlad_plasma_0.h"
 #include "effect_vlad_sinewave_0.h"
@@ -530,6 +531,7 @@ void artifactuary_mode_play_init(void)
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_fire_0_create(width, height), "Vlad fire 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_plasma_0_create(), "Vlad plasma 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_joe_fire_create(width, height), "Joe fire");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_joe_text_scroll_create(width, height), "Text scroll test");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sinewave_0_create(), "Sinewave 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sparkler_0_create(width, height), "Sparkler 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_slider_0_create(), "Rainbow Slider 0");

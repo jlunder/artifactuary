@@ -144,8 +144,8 @@ int32_t text_draw_glyph(text_font_t font, array_t* dest_array, int32_t x, int32_
         glyph_width = text_font_var_6.metrics.em_width;
     }
     
-    if(x > array_width || x < -glyph_width ||
-        y > array_height || y < -text_font_var_6.metrics.height)
+    if(x >= array_width || x <= -glyph_width ||
+        y >= array_height || y <= -text_font_var_6.metrics.height)
     {
         return glyph_width;
     }

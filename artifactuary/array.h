@@ -69,10 +69,13 @@ inline static void rgba_combine_source_alpha(rgba_t* dest, rgba_t color)
         *dest = color;
     }
     else {
-        dest->c.r = rgba_one_minus_alpha_table[color.c.a][dest->c.r] + rgba_alpha_table[color.c.a][dest->c.r];
-        dest->c.g = rgba_one_minus_alpha_table[color.c.a][dest->c.g] + rgba_alpha_table[color.c.a][dest->c.g];
-        dest->c.b = rgba_one_minus_alpha_table[color.c.a][dest->c.b] + rgba_alpha_table[color.c.a][dest->c.b];
-        dest->c.a = rgba_one_minus_alpha_table[color.c.a][dest->c.a] + color.c.a;
+        uint8_t* alpha_table = rgba_alpha_table[color.c.a];
+        uint8_t* one_minus_alpha_table = rgba_one_minus_alpha_table[color.c.a];
+        
+        dest->c.r = one_minus_alpha_table[dest->c.r] + alpha_table[color.c.r];
+        dest->c.g = one_minus_alpha_table[dest->c.g] + alpha_table[color.c.g];
+        dest->c.b = one_minus_alpha_table[dest->c.b] + alpha_table[color.c.b];
+        dest->c.a = one_minus_alpha_table[dest->c.a] + color.c.a;
     }
 }
 

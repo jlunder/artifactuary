@@ -8,9 +8,9 @@
 
 
 typedef enum {
-    FONT_PLAIN_4_BY_6,
+    //FONT_PLAIN_4_BY_6,
     FONT_PLAIN_VAR_6,
-    FONT_C64_8X8,
+    //FONT_C64_8X8,
 } text_font_t;
 
 
