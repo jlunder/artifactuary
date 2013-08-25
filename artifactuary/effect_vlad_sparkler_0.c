@@ -53,6 +53,7 @@ void effect_vlad_sparkler_0_process(void* void_state, array_t* target_array, int
     rgba_t* data = target_array->data;
     effect_vlad_sparkler_0_state_t* state = (effect_vlad_sparkler_0_state_t*)void_state;
     uint8_t* intensity = state->intensity;
+    uint8_t time = (uint8_t)(total_time_ns / 100000000LL);
     
     assert(width == state->width);
     assert(height == state->height);
@@ -60,18 +61,24 @@ void effect_vlad_sparkler_0_process(void* void_state, array_t* target_array, int
     // put random data in the bottom row
     for(int x = 0; x < width + 1; x++)
     {
-    intensity[(intensity_height - 1) * intensity_width + x] = rand() % 256;
+        intensity[(intensity_height - 1) * intensity_width + x] = rand() % 256;
     }
     
     for(int y = 0; y < intensity_height - 2; y++)
     {
         for(int x = 1; x < intensity_width - 1; x++) 
         {
-            byte newPoint = (fireDataA[x-1][y] + fireDataA[x+1][y] + fireDataA[x][y-1] + fireDataA[x][y+1]) / 4 - 15;
-          if(newPoint>50)
-            intensity[(y + 0) * intensity_width + x + 0] = (uint8_t)(newPoint / 5)+(uint8_t)time;
-          if(newPoint<50)
-            intensity[(y + 0) * intensity_width + x + 0] = (uint8_t)(0);            
+            int32_t newPoint =
+                ((int32_t)intensity[(y + 0) * intensity_width + x + 0] +
+                 (int32_t)intensity[(y + 1) * intensity_width + x - 1] +
+                 //(int32_t)intensity[(y + 1) * intensity_width + x + 0] +
+                 (int32_t)intensity[(y + 1) * intensity_width + x + 1] +
+                 (int32_t)intensity[(y + 2) * intensity_width + x + 0])
+                 / 4 - 15;
+            if(newPoint>50)
+                intensity[(y + 0) * intensity_width + x + 0] = (uint8_t)(newPoint / 5)+(uint8_t)time;
+            if(newPoint<50)
+                intensity[(y + 0) * intensity_width + x + 0] = (uint8_t)(0);            
         }
     }
 

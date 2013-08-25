@@ -21,7 +21,7 @@ effect_t* effect_vlad_sinewave_0_create(void)
     
     // hack: pack an int randomizer into the state pointer
     effect->void_state = (void*)rand();
-    effect->process = &effect_vlad_plasma_0_process;
+    effect->process = &effect_vlad_sinewave_0_process;
     
     return effect;
 }
@@ -33,12 +33,13 @@ void effect_vlad_sinewave_0_process(void* void_state, array_t* target_array, int
     int32_t height = target_array->height;
     rgba_t* data = target_array->data;
     float time = (float)((total_time_ns + (int64_t)void_state * 1000000LL) % 100000000000LL) / 1.0e9f;
+    rgba_t blankColor = {{0, 0, 0, 0}};
     
     for(int32_t y = 0; y < height; y++)
     {
         for(int32_t x = 0; x < width; x++)
         {
-            float sineValue = sin(0.2*(r+x));
+            float sineValue = sin(0.2*(time+x));
             float calculatedValue = ((2*(float)y)/(10))-1;
             
             // Change of range function (-1 - +1) -> (0 - 31)		        
@@ -46,14 +47,10 @@ void effect_vlad_sinewave_0_process(void* void_state, array_t* target_array, int
             
             if(calculatedValue<sineValue-0.1)
                 { 
-                rgba_t blankColor;
-                blankColor.c.r = 0; // red down
-                blankColor.c.g = 0; // green up
-                blankColor.c.b = 0; // blue off
                 data[y * width + x] = blankColor;
                 } else {
                 // Rolling portion
-                data[y * width + x] = color_wheel((int32_t)((y+time)*9)%384);
+                data[y * width + x] = color_wheel((int32_t)((y+time)*18)%768);
                 }  
         }    
     }

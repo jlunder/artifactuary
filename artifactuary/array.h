@@ -5,6 +5,10 @@
 #include "artifactuary.h"
 
 
+extern uint8_t rgba_alpha_table[256][256];
+extern uint8_t rgba_one_minus_alpha_table[256][256];
+
+
 // pixel type used by arrays: RGBA 8:8:8:8
 typedef union {
     struct {
@@ -57,6 +61,20 @@ void array_composite_explicit_alpha(array_t* target, array_t* source, uint8_t al
 // will be:
 //   min(target_pixel + source_pixel, rgba(255, 255, 255, 255))
 void array_composite_add(array_t* target, array_t* source);
+
+
+inline static void rgba_combine_source_alpha(rgba_t* dest, rgba_t color)
+{
+    if(color.c.a == 255) {
+        *dest = color;
+    }
+    else {
+        dest->c.r = rgba_one_minus_alpha_table[color.c.a][dest->c.r] + rgba_alpha_table[color.c.a][dest->c.r];
+        dest->c.g = rgba_one_minus_alpha_table[color.c.a][dest->c.g] + rgba_alpha_table[color.c.a][dest->c.g];
+        dest->c.b = rgba_one_minus_alpha_table[color.c.a][dest->c.b] + rgba_alpha_table[color.c.a][dest->c.b];
+        dest->c.a = rgba_one_minus_alpha_table[color.c.a][dest->c.a] + color.c.a;
+    }
+}
 
 
 #endif

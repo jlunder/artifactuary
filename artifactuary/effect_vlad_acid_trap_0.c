@@ -21,7 +21,7 @@ effect_t* effect_vlad_acid_trap_0_create(void)
     
     // hack: pack an int randomizer into the state pointer
     effect->void_state = (void*)rand();
-    effect->process = &effect_vlad_plasma_0_process;
+    effect->process = &effect_vlad_acid_trap_0_process;
     
     return effect;
 }
@@ -38,8 +38,8 @@ void effect_vlad_acid_trap_0_process(void* void_state, array_t* target_array, in
     {
         for(int32_t x = 0; x < width; x++)
         {
-        int wheelSetting = sqrt(((6-x)^(time/5))+((64-y)^(time/5)));
-        data[y * width + x] = color_wheel((int32_t)((wheelSetting*50)+(int32_t)time+(y*5))%255));
+            int32_t wheelSetting = sqrt((powf(6-x, time/5))+(powf(64-y, time/5)));
+            data[y * width + x] = color_wheel((int32_t)((wheelSetting*50)+(int32_t)time+(y*5))%255);
         }    
     }
 

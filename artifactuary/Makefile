@@ -124,6 +124,8 @@ ARTIFACTUARY_SRC= \
 	array.c \
 	effect.c \
 	main.c \
+	text.c \
+	font_var_6.c \
 	effect_blank.c \
 	effect_joe_fire.c \
 	effect_joe_text_scroll.c \

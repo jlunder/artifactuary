@@ -4,16 +4,16 @@
 
 
 // these tables contain the precomputed alpha fade functions.
-uint8_t array_alpha_table[256][256];
-uint8_t array_one_minus_alpha_table[256][256];
+uint8_t rgba_alpha_table[256][256];
+uint8_t rgba_one_minus_alpha_table[256][256];
 
 
 void array_init(void)
 {
     for(int32_t j = 0; j < 256; ++j) {
         for(int32_t i = 0; i < 256; ++i) {
-            array_alpha_table[j][i] = (j * i + 127) / 255;
-            array_one_minus_alpha_table[j][i] = ((255 - j) * i + 128) / 255;
+            rgba_alpha_table[j][i] = (j * i + 127) / 255;
+            rgba_one_minus_alpha_table[j][i] = ((255 - j) * i + 128) / 255;
         }
     }
 }
@@ -52,8 +52,8 @@ void array_composite_source_alpha(array_t* target, array_t* source)
     assert(target->height == source->height);
     
     for(int32_t i = 0; i < size; ++i) {
-        uint8_t* one_minus_alpha_table = array_one_minus_alpha_table[source->data[i].c.a];
-        uint8_t* alpha_table = array_alpha_table[source->data[i].c.a];
+        uint8_t* one_minus_alpha_table = rgba_one_minus_alpha_table[source->data[i].c.a];
+        uint8_t* alpha_table = rgba_alpha_table[source->data[i].c.a];
         
         target->data[i].c.r = one_minus_alpha_table[target->data[i].c.r] + alpha_table[source->data[i].c.r];
         target->data[i].c.g = one_minus_alpha_table[target->data[i].c.g] + alpha_table[source->data[i].c.g];
@@ -80,8 +80,8 @@ void array_composite_source_alpha_threshold(array_t* target, array_t* source, ui
 
 void array_composite_explicit_alpha(array_t* target, array_t* source, uint8_t alpha)
 {
-    uint8_t* one_minus_alpha_table = array_one_minus_alpha_table[alpha];
-    uint8_t* alpha_table = array_alpha_table[alpha];
+    uint8_t* one_minus_alpha_table = rgba_one_minus_alpha_table[alpha];
+    uint8_t* alpha_table = rgba_alpha_table[alpha];
     
     int32_t size = target->width * target->height;
     

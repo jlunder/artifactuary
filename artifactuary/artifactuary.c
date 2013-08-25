@@ -27,25 +27,17 @@ typedef enum {
 
 // the data pointers are set up in artifactuary_init
 array_t artifactuary_arrays[ARTIFACTUARY_NUM_ARRAYS] = {
-//    {
-//        .width = ARTIFACTUARY_BACKDROP_WIDTH,
-//        .height = ARTIFACTUARY_BACKDROP_HEIGHT,
-//    },
+    {
+        .width = ARTIFACTUARY_BUILDING_A_WIDTH,
+        .height = ARTIFACTUARY_BUILDING_A_HEIGHT,
+    },
     {
         .width = ARTIFACTUARY_BUILDING_B_WIDTH,
         .height = ARTIFACTUARY_BUILDING_B_HEIGHT,
     },
-//    {
-//        .width = ARTIFACTUARY_BUILDING_B2_WIDTH,
-//        .height = ARTIFACTUARY_BUILDING_B2_HEIGHT,
-//    },
     {
         .width = ARTIFACTUARY_BUILDING_C_WIDTH,
         .height = ARTIFACTUARY_BUILDING_C_HEIGHT,
-    },
-    {
-        .width = ARTIFACTUARY_BUILDING_A_WIDTH,
-        .height = ARTIFACTUARY_BUILDING_A_HEIGHT,
     },
 };
 
@@ -122,37 +114,20 @@ void artifactuary_generate_data_mapping(void)
         // Vlad: this is where almost all the useful configuration of the
         //       array orientations happens.
         switch(array) {
-        case ARTIFACTUARY_BACKDROP:
-            panel_count = 1;
-            if(artifactuary_arrays[array].height % 2 == 0) {
-	            panel_order = PANEL_LEFT_TO_RIGHT;
-            }
-            else {
-	            panel_order = PANEL_RIGHT_TO_LEFT;
-	        }
-            vdir = DIR_DOWN; // Vlad: for even panel counts this should be DIR_UP
+        case ARTIFACTUARY_BUILDING_A:
+            panel_count = 3;
+            panel_order = PANEL_LEFT_TO_RIGHT;
+            vdir = DIR_UP;
             break;
             
         case ARTIFACTUARY_BUILDING_B:
-            panel_count = 2;
-            panel_order = PANEL_LEFT_TO_RIGHT;
-            vdir = DIR_DOWN;
-            break;
-            
-        case ARTIFACTUARY_BUILDING_B2:
-            panel_count = 1;
+            panel_count = 3;
             panel_order = PANEL_LEFT_TO_RIGHT;
             vdir = DIR_DOWN;
             break;
             
         case ARTIFACTUARY_BUILDING_C:
             panel_count = 3;
-            panel_order = PANEL_LEFT_TO_RIGHT;
-            vdir = DIR_DOWN;
-            break;
-            
-        case ARTIFACTUARY_BUILDING_A:
-            panel_count = 2;
             panel_order = PANEL_LEFT_TO_RIGHT;
             vdir = DIR_UP;
             break;
@@ -168,7 +143,9 @@ void artifactuary_generate_data_mapping(void)
         // the panels have to have an odd number of rows for the wiring to
         // dovetail nicely using this algorithm when there are multiple panels
         // if there's only one panel for this array, don't care
-        assert((panel_height % 2 == 1) || (panel_count == 1));
+        
+        // ...FUCK THE TIDY WIRING
+        //assert((panel_height % 2 == 1) || (panel_count == 1));
         
         // check that the panel count results in sane panel widths for this
         // array width
@@ -553,12 +530,12 @@ void artifactuary_mode_play_init(void)
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_fire_0_create(width, height), "Vlad fire 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_plasma_0_create(), "Vlad plasma 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_joe_fire_create(width, height), "Joe fire");
-        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sinewave_0_create(width, height), "Sinewave 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sinewave_0_create(), "Sinewave 0");
         effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_sparkler_0_create(width, height), "Sparkler 0");
-        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_slider_0_create(width, height), "Rainbow Slider 0");
-        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_ladder_0_create(width, height), "Rainbow Ladder 0");
-        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_acid_trap_0_create(width, height), "Acid Trap 0");
-        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_mandelbrot_0_create(width, height), "Mandelbrot 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_slider_0_create(), "Rainbow Slider 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_rainbow_ladder_0_create(), "Rainbow Ladder 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_acid_trap_0_create(), "Acid Trap 0");
+        effect_timer_select_add_subeffect(artifactuary_effects[i], effect_vlad_mandelbrot_0_create(), "Mandelbrot 0");
     }
 }
 

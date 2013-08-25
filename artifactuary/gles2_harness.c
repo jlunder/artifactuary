@@ -131,8 +131,9 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     arrays_total_width = -array_spacing;
     arrays_total_height = 0.0f;
     
-    assert(ARTIFACTUARY_BACKDROP == 0);
-    for(int32_t k = 1; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
+    //assert(ARTIFACTUARY_BACKDROP == 0);
+    //for(int32_t k = 1; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
+    for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
         GLfloat array_width = artifactuary_arrays[k].width * pixel_spacing;
         GLfloat array_height = artifactuary_arrays[k].height * pixel_spacing;
         
@@ -143,20 +144,24 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
     }
     
     // add the height of the cityscape panel
-    arrays_total_height += array_spacing + ARTIFACTUARY_BACKDROP_HEIGHT * pixel_spacing;
+    //arrays_total_height += array_spacing + ARTIFACTUARY_BACKDROP_HEIGHT * pixel_spacing;
     
     for(int32_t k = 0; k < ARTIFACTUARY_NUM_ARRAYS; ++k) {
         GLfloat base_x = arrays_total_width * -0.5f;
         GLfloat base_y = arrays_total_height * -0.5f;
         array_t* array = &artifactuary_arrays[k];
         
+        /*
         if(k == ARTIFACTUARY_BACKDROP) {
             base_x = ARTIFACTUARY_BACKDROP_WIDTH * pixel_spacing * -0.5f;
             base_y += arrays_total_height - ARTIFACTUARY_BACKDROP_HEIGHT * pixel_spacing;
         }
         else {
+        */
             base_x += arrays_cur_x;
+        /*
         }
+        */
         
         for(int32_t j = 0, data_pos = 0; j < array->height; ++j) {
             for(int32_t i = 0; i < array->width; ++i, ++data_pos) {
@@ -174,9 +179,13 @@ GLUSboolean gles2_harness_update(GLUSfloat time)
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
             }
         }
+        /*
         if(k != ARTIFACTUARY_BACKDROP) {
+        */
             arrays_cur_x += array->width * pixel_spacing + array_spacing;
+        /*
         }
+        */
     }
     
     glDisableVertexAttribArray(g_vertexLocation);

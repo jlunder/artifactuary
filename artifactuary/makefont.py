@@ -1,11 +1,51 @@
-char_width = 5
-char_height = 8
+import sys
 
-for c in range(128 - 32):
-  print 'CHAR %d ("%s")' % (c + 32, chr(c + 32) if c + 32 != ord('"') and c + 32 != ord('\\') else '\\' + chr(c + 32))
-  for x in range(char_height):
-    print '.' * char_width
-  print
+f = open('var6.textfont', 'rt')
+
+inchar = False
+chars = []
+cwidth = 0
+for l in f.readlines():
+  if not inchar:
+    if l.startswith('CHAR'):
+      cnum = int(l.split()[1])
+      if cnum < 32 or cnum >= 128:
+        print "cnum out of range!", cnum, repr(l)
+        sys.exit(1)
+      cdata = [0, []]
+      inchar = True
+  else:
+    l = l.strip()
+    if l != '':
+      if cdata[0] == 0:
+        cdata[0] = len(l)
+      scanline = 0
+      bitval = 1
+      for c in l:
+        if c != '.':
+          scanline |= bitval
+        bitval <<= 1
+      if bitval != (1 << cdata[0]):
+        print "bad scanline width?", cnum, bitval
+        sys.exit(1)
+      cdata[1].append(scanline)
+    else:
+      if cnum != len(chars) + 32:
+        print "cnum don't match??", cnum
+        sys.exit(1)
+      if len(cdata[1]) != 6:
+        print "bad char height?", cnum
+        sys.exit(1)
+      chars.append(cdata)
+      inchar = False
+
+f.close()
+
+f = open('font_var6.h', 'wt')
+for c in chars:
+  f.write(('    {%d, {' % (c[0],)) + ', '.join(['0x%02X' % sl for sl in c[1]]) + '}},\n')
+f.close()
+
 
 """
 fa = [[0] * 8] * 96
@@ -23,10 +63,5 @@ for c in chars:
       (0x80 if x & 0x01 != 0 else 0))
   fa[c[0] - 32] = newc
 
-f = open('font.h', 'wt')
-for c in fa:
-  f.write('    {0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X},\n' % (
-    c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7],))
-f.close()
 
 """

@@ -21,7 +21,7 @@ effect_t* effect_vlad_mandelbrot_0_create(void)
     
     // hack: pack an int randomizer into the state pointer
     effect->void_state = (void*)rand();
-    effect->process = &effect_vlad_plasma_0_process;
+    effect->process = &effect_vlad_mandelbrot_0_process;
     
     return effect;
 }
