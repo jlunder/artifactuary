@@ -17,6 +17,8 @@ typedef struct effect_joe_text_scroll_state
     int32_t scroll_distance; // 24.8 fixed point, pixels between left edge of message and right edge of array
     int32_t scroll_speed; // 24.8 fixed point, pixels per frame
     
+    rgba_t color;
+    
     effect_t* background_effect;
 } effect_joe_text_scroll_state_t;
 
@@ -25,7 +27,7 @@ void effect_joe_text_scroll_destroy(void* void_state);
 void effect_joe_text_scroll_process(void* void_state, array_t* target_array, int64_t total_time_ns, int64_t frame_time_ns);
 
 
-effect_t* effect_joe_text_scroll_create(int32_t width, int32_t height, effect_t* background_effect)
+effect_t* effect_joe_text_scroll_create(int32_t width, int32_t height, rgba_t color, effect_t* background_effect)
 {
     effect_t* effect = effect_alloc();
     effect_joe_text_scroll_state_t* state = (effect_joe_text_scroll_state_t*)malloc(sizeof (effect_joe_text_scroll_state_t));
@@ -40,6 +42,8 @@ effect_t* effect_joe_text_scroll_create(int32_t width, int32_t height, effect_t*
     state->vertical_pos = 1;
     state->scroll_distance = 0;
     state->scroll_speed = ((30 << 8) + 15) / 30; // 30 / 30 pixels per frame = 30 pixels per second
+    
+    state->color = color;
     
     state->background_effect = background_effect;
     
@@ -56,6 +60,9 @@ void effect_joe_text_scroll_destroy(void* void_state)
     
     if(state->current_message != NULL) {
         free(state->current_message);
+    }
+    if(state->background_effect != NULL) {
+        effect_destroy(state->background_effect);
     }
     free(state);
 }
@@ -109,8 +116,7 @@ void effect_joe_text_scroll_process(void* void_state, array_t* target_array, int
     }
     
     if(state->current_message != NULL) {
-        rgba_t color = {{  0, 255,   0, 255}};
-        text_draw_text(FONT_PLAIN_VAR_6, target_array, target_array->width - (state->scroll_distance >> 8), state->vertical_pos, state->current_message, color);
+        text_draw_text(FONT_PLAIN_VAR_6, target_array, target_array->width - (state->scroll_distance >> 8), state->vertical_pos, state->current_message, state->color);
     }
 }
 

@@ -80,5 +80,12 @@ inline static void rgba_combine_source_alpha(rgba_t* dest, rgba_t color)
 }
 
 
+inline static rgba_t rgba_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    rgba_t result = {{r, g, b, a}};
+    return result;
+}
+
+
 #endif
 
